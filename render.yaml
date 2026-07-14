@@ -1,0 +1,36 @@
+# Render Blueprint — deploys the NestJS backend only (the 3 Expo apps are packaged as
+# APKs / run locally, they are not deployed as web services here).
+#
+# Prerequisite: schema.prisma's datasource must already be switched from sqlite to
+# postgresql (done together with wiring up the real Neon DATABASE_URL — see
+# apps/backend/.env.example for the connection string shape).
+#
+# Setup on Render:
+#   1. New "Blueprint" -> connect this GitHub repo -> Render reads this file.
+#   2. Set the DATABASE_URL, IYZICO_API_KEY, IYZICO_SECRET_KEY env vars in the
+#      Render dashboard (marked sync: false below so Render prompts for them
+#      instead of committing secrets to this file).
+services:
+  - type: web
+    name: kafe-backend
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install && npm run build:shared && npx prisma generate --schema apps/backend/prisma/schema.prisma && npx prisma migrate deploy --schema apps/backend/prisma/schema.prisma && npm run build --workspace=apps/backend
+    startCommand: node apps/backend/dist/src/main.js
+    healthCheckPath: /api
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: IYZICO_API_KEY
+        sync: false
+      - key: IYZICO_SECRET_KEY
+        sync: false
+      - key: IYZICO_BASE_URL
+        value: https://sandbox-api.iyzipay.com
