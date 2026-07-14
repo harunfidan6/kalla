@@ -22,7 +22,9 @@ const getBackendUrl = () => {
     const ip = debuggerHost.split(':')[0];
     return `http://${ip}:4000`;
   }
-  return 'http://10.0.2.2:4000';
+  // Standalone/release builds have no debugger host — fall back to the deployed
+  // production backend rather than the emulator-only 10.0.2.2 alias.
+  return 'https://kafe-backend-sox3.onrender.com';
 };
 
 export const API_URL = getBackendUrl();
