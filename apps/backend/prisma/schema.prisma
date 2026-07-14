@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String                  @id @default(uuid())
+  email               String                  @unique
+  phone               String                  @unique
+  passwordHash        String                  @map("password_hash")
+  role                String                  @default("customer")
+  fullName            String                  @map("full_name")
+  failedLoginAttempts Int                     @default(0) @map("failed_login_attempts")
+  lockoutUntil        DateTime?               @map("lockout_until")
+  branchId            String?                 @map("branch_id")
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  addresses           Address[]
+  customerProfile     CustomerProfile?
+  loyaltyTransactions LoyaltyTransaction[]
+  orders              Order[]
+  refreshTokens       RefreshToken[]
+  shiftChangeRequests ShiftChangeRequest[]
+  shifts              Shift[]
+  staffProfile        StaffProfile?
+  trainingProgress    StaffTrainingProgress[]
+  walletTopups        WalletTopup[]
+  wallet              Wallet?
+  posSalesSold        PosSale[]
+  zReportsClosed      ZReport[]
+  branch              Branch?                 @relation(fields: [branchId], references: [id])
+
+  @@map("users")
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  city      String?
+  district  String?
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now()) @map("created_at")
+  staff     User[]
+  orders    Order[]
+  shifts    Shift[]
+  posSales  PosSale[]
+  zReports  ZReport[]
+
+  @@map("branches")
+}
+
+model CustomerProfile {
+  userId        String    @id @map("user_id")
+  loyaltyTier   String    @default("bronze") @map("loyalty_tier")
+  loyaltyPoints Int       @default(0) @map("loyalty_points")
+  totalSpent    Float     @default(0.0) @map("total_spent")
+  birthday      DateTime?
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("customer_profiles")
+}
+
+model StaffProfile {
+  userId       String   @id @map("user_id")
+  position     String
+  hireDate     DateTime @default(now()) @map("hire_date")
+  employeeCode String   @unique @map("employee_code")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("staff_profiles")
+}
+
+model ProductCategory {
+  id           String    @id @default(uuid())
+  name         String    @unique
+  displayOrder Int       @map("display_order")
+  products     Product[]
+
+  @@map("product_categories")
+}
+
+model Product {
+  id          String          @id @default(uuid())
+  name        String
+  description String?
+  categoryId  String          @map("category_id")
+  price       Float
+  imageUrl    String?         @map("image_url")
+  isAvailable Boolean         @default(true) @map("is_available")
+  orderItems  OrderItem[]
+  posSales    PosSale[]
+  category    ProductCategory @relation(fields: [categoryId], references: [id])
+  recipe      Recipe?
+
+  @@map("products")
+}
+
+model Recipe {
+  id          String  @id @default(uuid())
+  productId   String  @unique @map("product_id")
+  prepTime    String  @map("prep_time")
+  difficulty  String
+  temp        String?
+  allergens   String
+  tags        String
+  proTip      String  @map("pro_tip")
+  ingredients String
+  steps       String
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("recipes")
+}
+
+model Order {
+  id                 String              @id @default(uuid())
+  customerId         String              @map("customer_id")
+  branchId           String              @map("branch_id")
+  status             String              @default("received")
+  orderType          String              @map("order_type")
+  paymentStatus      String              @map("payment_status")
+  subtotal           Float               @default(0)
+  discountAmount     Float               @default(0) @map("discount_amount")
+  discountLabel      String?             @map("discount_label")
+  totalAmount        Float               @map("total_amount")
+  posReceiptIssued   Boolean             @default(false) @map("pos_receipt_issued")
+  notes              String?
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  loyaltyTransaction LoyaltyTransaction?
+  items              OrderItem[]
+  customer           User                @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  branch             Branch              @relation(fields: [branchId], references: [id])
+  payment            Payment?
+  walletTransactions WalletTransaction[]
+  posSale            PosSale?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String  @map("order_id")
+  productId String  @map("product_id")
+  quantity  Int
+  unitPrice Float   @map("unit_price")
+  options   String?
+  product   Product @relation(fields: [productId], references: [id])
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model Campaign {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  ruleType    String   @map("rule_type")
+  ruleConfig  String
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  activeDays  String?  @map("active_days")
+  activeHours String?  @map("active_hours")
+
+  @@map("campaigns")
+}
+
+model LoyaltyTransaction {
+  id              String   @id @default(uuid())
+  customerId      String   @map("customer_id")
+  orderId         String?  @unique @map("order_id")
+  pointsChange    Int      @map("points_change")
+  transactionType String   @map("transaction_type")
+  createdAt       DateTime @default(now()) @map("created_at")
+  order           Order?   @relation(fields: [orderId], references: [id])
+  customer        User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("loyalty_transactions")
+}
+
+model Shift {
+  id             String               @id @default(uuid())
+  staffId        String               @map("staff_id")
+  branchId       String               @map("branch_id")
+  startTime      DateTime             @map("start_time")
+  endTime        DateTime             @map("end_time")
+  status         String               @default("scheduled")
+  changeRequests ShiftChangeRequest[]
+  staff          User                 @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  branch         Branch               @relation(fields: [branchId], references: [id])
+
+  @@map("shifts")
+}
+
+model ShiftChangeRequest {
+  id          String @id @default(uuid())
+  shiftId     String @map("shift_id")
+  requestedBy String @map("requested_by")
+  reason      String
+  status      String @default("pending")
+  requester   User   @relation(fields: [requestedBy], references: [id], onDelete: Cascade)
+  shift       Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@map("shift_change_requests")
+}
+
+model TrainingModule {
+  id           String                  @id @default(uuid())
+  title        String
+  category     String
+  videoUrl     String                  @map("video_url")
+  description  String
+  passingScore Int                     @map("passing_score")
+  progress     StaffTrainingProgress[]
+  questions    TrainingQuestion[]
+
+  @@map("training_modules")
+}
+
+model TrainingQuestion {
+  id            String         @id @default(uuid())
+  moduleId      String         @map("module_id")
+  questionText  String         @map("question_text")
+  options       String
+  correctAnswer String         @map("correct_answer")
+  module        TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@map("training_questions")
+}
+
+model StaffTrainingProgress {
+  id             String         @id @default(uuid())
+  staffId        String         @map("staff_id")
+  moduleId       String         @map("module_id")
+  status         String         @default("not_started")
+  quizScore      Int?           @map("quiz_score")
+  certificateUrl String?        @map("certificate_url")
+  completedAt    DateTime?      @map("completed_at")
+  module         TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  staff          User           @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, moduleId])
+  @@map("staff_training_progress")
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  label       String
+  addressLine String   @map("address_line")
+  city        String?
+  district    String?
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  email     String
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("password_resets")
+}
+
+model Wallet {
+  id           String              @id @default(uuid())
+  userId       String              @unique @map("user_id")
+  balance      Int                 @default(0)
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  transactions WalletTransaction[]
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id             String   @id @default(uuid())
+  walletId       String   @map("wallet_id")
+  type           String
+  amount         Int
+  orderId        String?  @map("order_id")
+  balanceAfter   Int      @map("balance_after")
+  idempotencyKey String   @unique @map("idempotency_key")
+  createdAt      DateTime @default(now()) @map("created_at")
+  order          Order?   @relation(fields: [orderId], references: [id])
+  wallet         Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_transactions")
+}
+
+model Payment {
+  id                   String   @id @default(uuid())
+  orderId              String   @unique @map("order_id")
+  iyzicoPaymentId      String?  @unique @map("iyzico_payment_id")
+  iyzicoConversationId String   @unique @map("iyzico_conversation_id")
+  amountCharged        Int      @map("amount_charged")
+  walletAmountUsed     Int      @default(0) @map("wallet_amount_used")
+  status               String   @default("PENDING")
+  rawResponse          String?  @map("raw_response")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  order                Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model PosSale {
+  id            String   @id @default(uuid())
+  productId     String?  @map("product_id")
+  branchId      String   @map("branch_id")
+  description   String?
+  unitPrice     Float    @map("unit_price")
+  quantity      Int      @default(1)
+  paymentMethod String   @map("payment_method")
+  soldById      String   @map("sold_by_id")
+  orderId       String?  @unique @map("order_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  zReportId     String?  @map("z_report_id")
+  product       Product? @relation(fields: [productId], references: [id])
+  branch        Branch   @relation(fields: [branchId], references: [id])
+  soldBy        User     @relation(fields: [soldById], references: [id])
+  zReport       ZReport? @relation(fields: [zReportId], references: [id])
+  order         Order?   @relation(fields: [orderId], references: [id])
+
+  @@map("pos_sales")
+}
+
+model ZReport {
+  id          String    @id @default(uuid())
+  closedById  String    @map("closed_by_id")
+  branchId    String    @map("branch_id")
+  periodStart DateTime  @map("period_start")
+  periodEnd   DateTime  @default(now()) @map("period_end")
+  cashTotal   Float     @map("cash_total")
+  cardTotal   Float     @map("card_total")
+  txCount     Int       @map("tx_count")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  closedBy    User      @relation(fields: [closedById], references: [id])
+  branch      Branch    @relation(fields: [branchId], references: [id])
+  sales       PosSale[]
+
+  @@map("z_reports")
+}
+
+model WalletTopup {
+  id                   String   @id @default(uuid())
+  userId               String   @map("user_id")
+  amount               Int      @map("amount")
+  iyzicoPaymentId      String?  @unique @map("iyzico_payment_id")
+  iyzicoConversationId String   @unique @map("iyzico_conversation_id")
+  status               String   @default("PENDING")
+  rawResponse          String?  @map("raw_response")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_topups")
+}

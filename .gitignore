@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+*.tsbuildinfo
+android/
+ios/
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+
+# Database (local dev only — production uses Postgres)
+apps/backend/prisma/dev.db
+apps/backend/prisma/dev.db-journal
+apps/backend/prisma/backups/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Misc local artifacts
+chrome_test_profil/
+yapi.txt

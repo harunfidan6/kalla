@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Outer bean left half -->
+  <path d="M 50,8 C 25,12 15,32 15,50 C 15,68 25,88 50,92" stroke="#87A99C" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Outer bean right half -->
+  <path d="M 50,8 C 75,12 85,32 85,50 C 85,68 75,88 50,92" stroke="#87A99C" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Tree trunk inside -->
+  <path d="M 50,92 C 50,85 52,72 52,65" stroke="#87A99C" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Tree canopy clover -->
+  <path d="M 52,65 C 65,65 72,55 65,45 C 62,40 55,40 50,45 C 45,40 38,40 35,45 C 28,55 35,65 48,65 C 48,72 50,85 50,92" stroke="#87A99C" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Center crease curves -->
+  <path d="M 50,8 C 50,18 48,25 48,32" stroke="#87A99C" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M 48,32 C 48,38 52,38 52,44" stroke="#87A99C" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

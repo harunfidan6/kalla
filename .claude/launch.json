@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:backend"],
+      "port": 4000
+    },
+    {
+      "name": "customer-app-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "web", "--workspace=apps/customer-app"],
+      "port": 8081
+    },
+    {
+      "name": "staff-app-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "web", "--workspace=apps/staff-app"],
+      "port": 8082
+    },
+    {
+      "name": "admin-app-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "web", "--workspace=apps/admin-app"],
+      "port": 8083
+    }
+  ]
+}

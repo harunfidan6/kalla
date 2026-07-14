@@ -1,0 +1,22 @@
+{
+  "name": "kafe-monorepo",
+  "version": "1.0.0",
+  "description": "Kafe Yonetim Uygulamasi Monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build --workspace=packages/shared-types",
+    "dev:backend": "npm run start:dev --workspace=apps/backend",
+    "dev:customer": "npm run web --workspace=apps/customer-app",
+    "dev:staff": "npm run web --workspace=apps/staff-app",
+    "dev:admin": "npm run web --workspace=apps/admin-app",
+    "db:migrate": "npm run prisma:migrate --workspace=apps/backend",
+    "db:studio": "npm run prisma:studio --workspace=apps/backend"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

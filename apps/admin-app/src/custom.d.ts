@@ -1,0 +1,9 @@
+declare module '*.module.css' {
+  const classes: { [key: string]: string };
+  export default classes;
+}
+
+declare module '@/global.css' {
+  const content: any;
+  export default content;
+}
