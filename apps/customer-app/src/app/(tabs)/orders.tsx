@@ -118,6 +118,7 @@ export default function OrdersScreen() {
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case OrderStatus.PENDING_PAYMENT: return 'Ödeme Bekleniyor';
       case OrderStatus.RECEIVED: return 'Alındı';
       case OrderStatus.PREPARING: return 'Hazırlanıyor';
       case OrderStatus.READY: return 'Hazır';
@@ -205,7 +206,7 @@ export default function OrdersScreen() {
                 <Text style={[styles.totalPrice, { color: colors.text, fontFamily: Fonts.display }]}>{formatTL(order.totalAmount)}</Text>
               </View>
 
-              {order.status === OrderStatus.RECEIVED && (
+              {(order.status === OrderStatus.RECEIVED || order.status === OrderStatus.PENDING_PAYMENT) && (
                 <TouchableOpacity onPress={() => confirmCancelOrder(order.id)} disabled={cancellingId === order.id} style={styles.cancelBtn}>
                   {cancellingId === order.id ? (
                     <ActivityIndicator size="small" color={colors.error} />

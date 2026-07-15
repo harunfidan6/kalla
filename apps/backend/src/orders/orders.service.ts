@@ -107,11 +107,18 @@ export class OrdersService {
       const discountLabel = discountRate > 0 ? TIER_DISCOUNT_LABELS[tier] : null;
 
       // 3. Create Order
+      // Online ödemeli siparişler, gerçek ödeme checkout() içinde onaylanana kadar
+      // "pending_payment" durumunda kalır — personel Kanban'ı bu durumu göstermez
+      // (bkz. findAllActiveOrders), aksi halde müşteri kart bilgisini hiç girmeden
+      // ödeme sayfasını kapatsa bile sipariş personel tarafında "Alındı" görünürdü.
+      const initialStatus =
+        paymentStatus === PaymentStatus.PAID_ONLINE ? OrderStatus.PENDING_PAYMENT : OrderStatus.RECEIVED;
+
       const order = await tx.order.create({
         data: {
           customerId: userId,
           branchId,
-          status: OrderStatus.RECEIVED,
+          status: initialStatus,
           orderType,
           paymentStatus,
           subtotal,
@@ -173,8 +180,11 @@ export class OrdersService {
       return order;
     });
 
-    // Emit event after transaction commits successfully
-    this.eventsGateway.emitNewOrder(order);
+    // Emit event after transaction commits successfully — pending_payment siparişler henüz
+    // gerçek para akışı doğrulanmadığı için personele hiç bildirilmez (bkz. checkout()).
+    if (order.status !== OrderStatus.PENDING_PAYMENT) {
+      this.eventsGateway.emitNewOrder(order);
+    }
 
     return order;
   }
@@ -231,7 +241,7 @@ export class OrdersService {
       where: {
         branchId,
         status: {
-          notIn: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
+          notIn: [OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.PENDING_PAYMENT],
         },
       },
       include: {
@@ -298,6 +308,9 @@ export class OrdersService {
 
     // Define valid transitions
     const validTransitions: Record<OrderStatus, OrderStatus[]> = {
+      // pending_payment -> received geçişi yalnızca checkout() içinde (gerçek ödeme onayında)
+      // yapılır, bu genel state machine üzerinden değil — burada sadece iptale izin verilir.
+      [OrderStatus.PENDING_PAYMENT]: [OrderStatus.CANCELLED],
       [OrderStatus.RECEIVED]: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
       [OrderStatus.PREPARING]: [OrderStatus.READY, OrderStatus.CANCELLED],
       [OrderStatus.READY]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
@@ -558,10 +571,11 @@ export class OrdersService {
             },
           });
 
-        // Update Order status
+        // Update Order status — ödeme onaylandığı an "pending_payment"tan çıkıp personel
+        // Kanban'ında görünür hale gelir (bkz. create()/findAllActiveOrders).
         await tx.order.update({
           where: { id: orderId },
-          data: { paymentStatus: 'paid_online' },
+          data: { paymentStatus: 'paid_online', status: OrderStatus.RECEIVED },
         });
 
         return {
@@ -577,6 +591,8 @@ export class OrdersService {
         throw new BadRequestException('Bu sipariş ödemesi zaten işlendi.');
       }
       throw e;
+    } finally {
+      await this.notifyOrderPaidIfReceived(orderId);
     }
     }
 
@@ -718,10 +734,11 @@ export class OrdersService {
         },
       });
 
-      // 5. Update Order status
+      // 5. Update Order status — ödeme onaylandığı an "pending_payment"tan çıkıp personel
+      // Kanban'ında görünür hale gelir (bkz. create()/findAllActiveOrders).
       await tx.order.update({
         where: { id: orderId },
-        data: { paymentStatus: 'paid_online' },
+        data: { paymentStatus: 'paid_online', status: OrderStatus.RECEIVED },
       });
 
       return {
@@ -737,6 +754,24 @@ export class OrdersService {
         throw new BadRequestException('Bu sipariş ödemesi zaten işlendi.');
       }
       throw e;
+    } finally {
+      await this.notifyOrderPaidIfReceived(orderId);
+    }
+  }
+
+  // checkout() içindeki her iki başarı yolundan sonra çağrılır: sipariş gerçekten
+  // "received" durumuna geçtiyse (pending_payment'tan çıktıysa) personele canlı bildirir.
+  // Transaction dışında çalışır ki commit kesinleşmeden socket olayı gönderilmesin.
+  private async notifyOrderPaidIfReceived(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: { include: { product: true } },
+        customer: { select: { fullName: true, email: true, phone: true } },
+      },
+    });
+    if (order && order.status === OrderStatus.RECEIVED) {
+      this.eventsGateway.emitNewOrder(order);
     }
   }
 

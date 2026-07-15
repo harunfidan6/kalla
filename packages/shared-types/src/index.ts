@@ -12,6 +12,7 @@ export enum LoyaltyTier {
 }
 
 export enum OrderStatus {
+  PENDING_PAYMENT = 'pending_payment',
   RECEIVED = 'received',
   PREPARING = 'preparing',
   READY = 'ready',

@@ -9,6 +9,7 @@ import { OrderType, PaymentStatus } from '@kafe/shared-types';
 import GlassBackground from '../components/GlassBackground';
 import GlassView from '../components/GlassView';
 import { BasketIcon, GelAlIcon, PaketIcon, OdemeIcon } from '../components/KallaIcons';
+import { WebView } from 'react-native-webview';
 
 // Bilgilendirme amaçlı istemci tahmini — gerçek indirim her zaman sunucuda
 // (apps/backend/src/orders/orders.service.ts, TIER_DISCOUNT_RATES) hesaplanır ve
@@ -195,6 +196,10 @@ export default function CartScreen() {
   };
 
   useEffect(() => {
+    // iyzico'nun ödeme sayfası bir <iframe> içinde açılır (yalnızca web'de) ve postMessage ile
+    // sonucu bildirir. Native'de window nesnesi bu şekilde yok, bu yüzden yalnızca web'de
+    // dinleyici ekliyoruz — aksi halde ödeme adımına gelindiğinde uygulama çöker.
+    if (Platform.OS !== 'web') return;
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'IYZICO_SUCCESS') handlePayment(event.data.token);
     };
@@ -456,7 +461,21 @@ export default function CartScreen() {
                           sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation"
                         />
                       ) : (
-                        <Text style={{ color: colors.text, textAlign: 'center' }}>WebView is supported on Web platform.</Text>
+                        <View style={{ width: '100%', height: 420, borderRadius: 12, overflow: 'hidden' }}>
+                          <WebView
+                            source={{ uri: paymentPageUrl }}
+                            style={{ backgroundColor: '#ffffff' }}
+                            onNavigationStateChange={(navState) => {
+                              // Web'deki postMessage köprüsünün native karşılığı: iyzico'nun
+                              // yönlendirdiği başarı sayfasının URL'indeki token'ı doğrudan yakalıyoruz
+                              // (bkz. backend orders.controller.ts checkout-form/success).
+                              if (navState.url.includes('/orders/checkout-form/success')) {
+                                const match = navState.url.match(/[?&]token=([^&]+)/);
+                                if (match) handlePayment(decodeURIComponent(match[1]));
+                              }
+                            }}
+                          />
+                        </View>
                       )
                     ) : (
                       <ActivityIndicator size="small" color={colors.primary} />

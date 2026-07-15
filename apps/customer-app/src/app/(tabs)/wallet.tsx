@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts, formatTL } from '../../constants/theme';
 import { useRouter, useIsFocused } from 'expo-router';
+import { WebView } from 'react-native-webview';
 
 const PRESETS = ['50', '100', '200', '500'];
 
@@ -96,6 +97,10 @@ export default function WalletScreen() {
   };
 
   useEffect(() => {
+    // iyzico'nun ödeme sayfası bir <iframe> içinde açılır (yalnızca web'de, bkz. Platform.OS
+    // === 'web' bloğu aşağıda) ve postMessage ile sonucu bildirir. Native'de window nesnesi bu
+    // şekilde yok, bu yüzden yalnızca web'de dinleyici ekliyoruz.
+    if (Platform.OS !== 'web') return;
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'IYZICO_SUCCESS') {
         handleTopupComplete(event.data.token);
@@ -271,7 +276,19 @@ export default function WalletScreen() {
                           sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation"
                         />
                       ) : (
-                        <Text style={{ color: colors.text, textAlign: 'center' }}>WebView is supported on Web platform.</Text>
+                        <View style={{ width: '100%', height: 400, borderRadius: 12, overflow: 'hidden' }}>
+                          <WebView
+                            source={{ uri: paymentPageUrl }}
+                            style={{ backgroundColor: '#ffffff' }}
+                            onNavigationStateChange={(navState) => {
+                              // Web'deki postMessage köprüsünün native karşılığı — bkz. cart.tsx.
+                              if (navState.url.includes('/orders/checkout-form/success')) {
+                                const match = navState.url.match(/[?&]token=([^&]+)/);
+                                if (match) handleTopupComplete(decodeURIComponent(match[1]));
+                              }
+                            }}
+                          />
+                        </View>
                       )}
                     </View>
                   ) : (
