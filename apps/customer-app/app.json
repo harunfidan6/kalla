@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "customer-app",
+    "name": "Källa",
     "slug": "customer-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,6 +11,7 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.kalla.customer",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
