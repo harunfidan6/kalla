@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts } from '../../constants/theme';
 import { Role, ShiftChangeRequestStatus } from '@kafe/shared-types';
+import GlassView from '../../components/GlassView';
 
 const WEEKDAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 
@@ -301,13 +302,7 @@ export default function ShiftsScreen() {
       {selectedShift && (
         <Modal animationType="fade" transparent visible onRequestClose={() => setSelectedShift(null)}>
           <View style={styles.modalOverlay}>
-            <View
-              style={[
-                styles.modalSheet,
-                { borderColor: colors.border, backgroundColor: solidSheetBg(colors) },
-                webBlur(),
-              ]}
-            >
+            <GlassView backgroundColor={solidSheetBg(colors)} blurAmount={26} style={[styles.modalSheet, { borderColor: colors.border }]}>
               {!requestSuccess ? (
                 <>
                   <View style={styles.modalHeader}>
@@ -370,23 +365,12 @@ export default function ShiftsScreen() {
                   </Text>
                 </View>
               )}
-            </View>
+            </GlassView>
           </View>
         </Modal>
       )}
     </>
   );
-}
-
-function webBlur() {
-  return Platform.select({
-    web: {
-      // @ts-ignore web-only
-      backdropFilter: 'blur(26px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(26px) saturate(180%)',
-    } as any,
-    default: {},
-  });
 }
 
 // Modal arka planı: cardBgStrong çok saydam olduğundan altındaki karartılmış içerik okunurluğu

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import { useRouter, useIsFocused } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts, formatTL } from '../../constants/theme';
+import GlassView from '../../components/GlassView';
 
 export default function AdminZReportsScreen() {
   const router = useRouter();
@@ -163,7 +164,7 @@ export default function AdminZReportsScreen() {
       {selectedReport && (
         <Modal animationType="fade" transparent visible onRequestClose={() => setSelectedReportId(null)}>
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalCard, { borderColor: colors.border, backgroundColor: solidSheetBg(colors) }, webBlur()]}>
+            <GlassView backgroundColor={solidSheetBg(colors)} blurAmount={26} style={[styles.modalCard, { borderColor: colors.border }]}>
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>Z Raporu</Text>
                 <TouchableOpacity onPress={() => setSelectedReportId(null)}>
@@ -212,23 +213,12 @@ export default function AdminZReportsScreen() {
                   <Text style={[styles.modalCloseBtnText, { fontFamily: Fonts.uiBold }]}>Kapat</Text>
                 </LinearGradient>
               </TouchableOpacity>
-            </View>
+            </GlassView>
           </View>
         </Modal>
       )}
     </>
   );
-}
-
-function webBlur() {
-  return Platform.select({
-    web: {
-      // @ts-ignore web-only
-      backdropFilter: 'blur(26px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(26px) saturate(180%)',
-    } as any,
-    default: {},
-  });
 }
 
 function solidSheetBg(colors: any) {

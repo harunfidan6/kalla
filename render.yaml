@@ -36,3 +36,5 @@ services:
         sync: false
       - key: IYZICO_BASE_URL
         value: https://sandbox-api.iyzipay.com
+      - key: API_BASE_URL
+        value: https://kafe-backend-sox3.onrender.com

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Modal } from 'react-native';
 import { useRouter, useIsFocused } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth, API_URL } from '../../context/AuthContext';
@@ -7,6 +7,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { Fonts, formatTL } from '../../constants/theme';
 import { OrderStatus, OrderType, PaymentStatus, PaymentMethod } from '@kafe/shared-types';
 import io from 'socket.io-client';
+import ConfirmModal, { ConfirmModalState } from '../../components/ConfirmModal';
+import GlassView from '../../components/GlassView';
 
 // Emin: sipariş durumuna göre modaldaki tek aksiyon butonunun etiketi (demo actionLabelMap).
 const ACTION_LABELS: Partial<Record<string, string>> = {
@@ -28,6 +30,7 @@ export default function KanbanScreen() {
   const isFocused = useIsFocused();
 
   const [orders, setOrders] = useState<any[]>([]);
+  const [confirmState, setConfirmState] = useState<ConfirmModalState | null>(null);
   const [cancelledOrders, setCancelledOrders] = useState<any[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -155,7 +158,7 @@ export default function KanbanScreen() {
       if (Platform.OS === 'web') {
         alert('Sipariş güncellenemedi: ' + err.message);
       } else {
-        Alert.alert('Hata', 'Sipariş güncellenemedi.');
+        setConfirmState({ title: 'Hata', message: 'Sipariş güncellenemedi.' });
       }
     }
   };
@@ -329,13 +332,10 @@ export default function KanbanScreen() {
       {selectedOrder && (
         <Modal animationType="fade" transparent visible onRequestClose={() => setSelectedOrderId(null)}>
           <View style={styles.modalOverlay}>
-            <View
-              style={[
-                styles.modalSheet,
-                { backgroundColor: colors.cardBgStrong, borderColor: colors.border },
-                webBlur(),
-                { backgroundColor: solidSheetBg(colors) },
-              ]}
+            <GlassView
+              backgroundColor={solidSheetBg(colors)}
+              blurAmount={26}
+              style={[styles.modalSheet, { borderColor: colors.border }]}
             >
               <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
                 <View style={styles.modalHeader}>
@@ -486,23 +486,14 @@ export default function KanbanScreen() {
                   )
                 )}
               </ScrollView>
-            </View>
+            </GlassView>
           </View>
         </Modal>
       )}
+
+      <ConfirmModal state={confirmState} onClose={() => setConfirmState(null)} />
     </>
   );
-}
-
-function webBlur() {
-  return Platform.select({
-    web: {
-      // @ts-ignore web-only
-      backdropFilter: 'blur(26px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(26px) saturate(180%)',
-    } as any,
-    default: {},
-  });
 }
 
 // Modal arka planı: cardBgStrong çok saydam olduğundan altındaki karartılmış içerik okunurluğu

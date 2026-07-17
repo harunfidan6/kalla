@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { useRouter, useIsFocused } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts } from '../../constants/theme';
 import { TabBranchesIcon } from '../../components/KallaIcons';
+import GlassView from '../../components/GlassView';
 
 const emptyForm = { name: '', address: '', city: '', district: '', latitude: '', longitude: '' };
 
@@ -149,7 +150,7 @@ export default function BranchesScreen() {
 
       <Modal animationType="fade" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { borderColor: colors.border, backgroundColor: solidSheetBg(colors) }, webBlur()]}>
+          <GlassView backgroundColor={solidSheetBg(colors)} blurAmount={26} style={[styles.modalSheet, { borderColor: colors.border }]}>
             <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>Yeni Şube</Text>
@@ -189,22 +190,11 @@ export default function BranchesScreen() {
                 </LinearGradient>
               </TouchableOpacity>
             </ScrollView>
-          </View>
+          </GlassView>
         </View>
       </Modal>
     </>
   );
-}
-
-function webBlur() {
-  return Platform.select({
-    web: {
-      // @ts-ignore web-only
-      backdropFilter: 'blur(26px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(26px) saturate(180%)',
-    } as any,
-    default: {},
-  });
 }
 
 function solidSheetBg(colors: any) {

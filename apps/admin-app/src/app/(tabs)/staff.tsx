@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import { useRouter, useIsFocused } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts } from '../../constants/theme';
 import { Role } from '@kafe/shared-types';
+import GlassView from '../../components/GlassView';
 
 const ROLE_LABELS: Record<string, string> = {
   [Role.STAFF]: 'Barista',
@@ -126,7 +127,7 @@ export default function StaffScreen() {
 
       <Modal animationType="fade" transparent visible={!!selectedStaff} onRequestClose={() => setSelectedStaff(null)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { borderColor: colors.border, backgroundColor: solidSheetBg(colors) }, webBlur()]}>
+          <GlassView backgroundColor={solidSheetBg(colors)} blurAmount={26} style={[styles.modalSheet, { borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>
                 {selectedStaff?.fullName}
@@ -160,22 +161,11 @@ export default function StaffScreen() {
             {assignError && (
               <Text style={{ color: colors.error, fontFamily: Fonts.uiBold, fontSize: 11, marginTop: 8 }}>{assignError}</Text>
             )}
-          </View>
+          </GlassView>
         </View>
       </Modal>
     </>
   );
-}
-
-function webBlur() {
-  return Platform.select({
-    web: {
-      // @ts-ignore web-only
-      backdropFilter: 'blur(26px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(26px) saturate(180%)',
-    } as any,
-    default: {},
-  });
 }
 
 function solidSheetBg(colors: any) {

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, RefreshControl, ActivityIndicator, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, ActivityIndicator, ScrollView, TouchableOpacity, Platform, Modal } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts, formatTL } from '../../constants/theme';
 import { OrderStatus } from '@kafe/shared-types';
 import io from 'socket.io-client';
 import { useRouter, useIsFocused } from 'expo-router';
+import ConfirmModal, { ConfirmModalState } from '../../components/ConfirmModal';
 
 export default function OrdersScreen() {
   const { user, apiFetch, accessToken, loading: authLoading } = useAuth();
@@ -18,6 +20,12 @@ export default function OrdersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmModalState | null>(null);
+
+  const [resumeOrderId, setResumeOrderId] = useState<string | null>(null);
+  const [resumePaymentUrl, setResumePaymentUrl] = useState<string | null>(null);
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
 
   const socketRef = useRef<any>(null);
 
@@ -80,11 +88,12 @@ export default function OrdersScreen() {
     } catch (err: any) {
       const message = err.message || 'Sipariş iptal edilirken bir hata oluştu.';
       // react-native-web'in Alert.alert() implementasyonu tamamen no-op (hiçbir şey yapmıyor) —
-      // web'de çalışırken bu hata hiç görünmez olurdu.
+      // web'de zaten window.alert kullanılıyor; native'de markasız OS diyaloğu yerine kendi
+      // ConfirmModal'ımızı gösteriyoruz.
       if (Platform.OS === 'web') {
         window.alert(message);
       } else {
-        Alert.alert('İptal Edilemedi', message);
+        setConfirmState({ title: 'İptal Edilemedi', message });
       }
     } finally {
       setCancellingId(null);
@@ -100,10 +109,56 @@ export default function OrdersScreen() {
       }
       return;
     }
-    Alert.alert('Siparişi İptal Et', 'Bu siparişi iptal etmek istediğinize emin misiniz?', [
-      { text: 'Vazgeç', style: 'cancel' },
-      { text: 'Siparişi İptal Et', style: 'destructive', onPress: () => cancelOrder(orderId) },
-    ]);
+    setConfirmState({
+      title: 'Siparişi İptal Et',
+      message: 'Bu siparişi iptal etmek istediğinize emin misiniz?',
+      cancelText: 'Vazgeç',
+      confirmText: 'Siparişi İptal Et',
+      destructive: true,
+      onConfirm: () => cancelOrder(orderId),
+    });
+  };
+
+  // "Ödeme Bekleniyor" siparişlerinde kart bilgisi girilmeden ekrandan çıkılırsa (uygulama
+  // kapatılırsa, geri tuşuna basılırsa vb.) ödemeye dönecek bir yol yoktu — sepetteki orijinal
+  // ödeme akışını (initialize → WebView → checkout) aynı orderId ile burada tekrar çalıştırıyoruz.
+  const openResumePayment = async (orderId: string) => {
+    setResumeOrderId(orderId);
+    setResumePaymentUrl(null);
+    setResumeError(null);
+    setResumeLoading(true);
+    try {
+      const result = await apiFetch(`/orders/${orderId}/checkout-form/initialize`, {
+        method: 'POST',
+        body: JSON.stringify({ useWallet: false }),
+      });
+      setResumePaymentUrl(result.paymentPageUrl);
+    } catch (err: any) {
+      setResumeError(err.message || 'Ödeme sayfası başlatılamadı.');
+    } finally {
+      setResumeLoading(false);
+    }
+  };
+
+  const completeResumePayment = async (token: string) => {
+    if (!resumeOrderId) return;
+    setResumeLoading(true);
+    setResumeError(null);
+    try {
+      await apiFetch(`/orders/${resumeOrderId}/checkout`, {
+        method: 'POST',
+        body: JSON.stringify({ useWallet: false, paymentToken: token }),
+      });
+      setOrders((prevOrders) =>
+        prevOrders.map((o) => (o.id === resumeOrderId ? { ...o, status: OrderStatus.RECEIVED } : o))
+      );
+      setResumeOrderId(null);
+      setResumePaymentUrl(null);
+    } catch (err: any) {
+      setResumeError(err.message || 'Ödeme tamamlanamadı.');
+    } finally {
+      setResumeLoading(false);
+    }
   };
 
   const getStatusStep = (status: string) => {
@@ -143,6 +198,7 @@ export default function OrdersScreen() {
   }
 
   return (
+    <>
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={styles.content}
@@ -206,6 +262,12 @@ export default function OrdersScreen() {
                 <Text style={[styles.totalPrice, { color: colors.text, fontFamily: Fonts.display }]}>{formatTL(order.totalAmount)}</Text>
               </View>
 
+              {order.status === OrderStatus.PENDING_PAYMENT && (
+                <TouchableOpacity onPress={() => openResumePayment(order.id)} style={[styles.resumeBtn, { backgroundColor: colors.primary }]}>
+                  <Text style={[styles.resumeBtnText, { fontFamily: Fonts.uiBold }]}>Ödemeyi Tamamla</Text>
+                </TouchableOpacity>
+              )}
+
               {(order.status === OrderStatus.RECEIVED || order.status === OrderStatus.PENDING_PAYMENT) && (
                 <TouchableOpacity onPress={() => confirmCancelOrder(order.id)} disabled={cancellingId === order.id} style={styles.cancelBtn}>
                   {cancellingId === order.id ? (
@@ -252,6 +314,58 @@ export default function OrdersScreen() {
         ))
       )}
     </ScrollView>
+    <ConfirmModal state={confirmState} onClose={() => setConfirmState(null)} />
+
+    <Modal animationType="slide" transparent visible={!!resumeOrderId} onRequestClose={() => setResumeOrderId(null)}>
+      <View style={[styles.resumeModalOverlay, { backgroundColor: colors.overlayBar }]}>
+        <View style={[styles.resumeModalCard, { backgroundColor: colors.cardBgStrong, borderColor: colors.border }]}>
+          <View style={styles.resumeModalHeader}>
+            <Text style={[styles.resumeModalTitle, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>Ödemeyi Tamamla</Text>
+            <TouchableOpacity onPress={() => setResumeOrderId(null)}>
+              <Text style={{ fontSize: 18, color: colors.textSecondary }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          {resumeLoading && !resumePaymentUrl ? (
+            <View style={styles.resumeCenterFill}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : resumeError ? (
+            <View style={styles.resumeCenterFill}>
+              <Text style={{ color: colors.error, fontSize: 12, textAlign: 'center' }}>{resumeError}</Text>
+            </View>
+          ) : resumePaymentUrl ? (
+            Platform.OS === 'web' ? (
+              <iframe
+                src={resumePaymentUrl}
+                style={{ width: '100%', flex: 1, border: 'none', backgroundColor: '#ffffff' } as any}
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation"
+              />
+            ) : (
+              <View style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}>
+                <WebView
+                  source={{ uri: resumePaymentUrl }}
+                  style={{ flex: 1, backgroundColor: '#ffffff' }}
+                  startInLoadingState
+                  renderLoading={() => (
+                    <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }]}>
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    </View>
+                  )}
+                  onNavigationStateChange={(navState) => {
+                    if (navState.url.includes('/orders/checkout-form/success')) {
+                      const match = navState.url.match(/[?&]token=([^&]+)/);
+                      if (match) completeResumePayment(decodeURIComponent(match[1]));
+                    }
+                  }}
+                />
+              </View>
+            )
+          ) : null}
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -282,6 +396,20 @@ const styles = StyleSheet.create({
   totalPrice: { fontSize: 13 },
   cancelBtn: { marginTop: 12, paddingVertical: 8, alignItems: 'center' },
   cancelBtnText: { fontSize: 12 },
+  resumeBtn: { marginTop: 14, borderRadius: 999, paddingVertical: 12, alignItems: 'center' },
+  resumeBtnText: { fontSize: 13, color: '#fdfdfb' },
+  resumeModalOverlay: { flex: 1, justifyContent: 'flex-end' },
+  resumeModalCard: {
+    height: '80%',
+    padding: 20,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  resumeModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  resumeModalTitle: { fontSize: 17 },
+  resumeCenterFill: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   orderCardCompact: { padding: 14, borderRadius: 16, borderWidth: 1, marginBottom: 10 },
   orderNumberCompact: { fontSize: 11 },
   orderDate: { fontSize: 9, marginTop: 2 },

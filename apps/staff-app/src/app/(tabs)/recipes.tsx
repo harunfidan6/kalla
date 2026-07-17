@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Modal } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts } from '../../constants/theme';
 import { AramaIcon } from '../../components/KallaIcons';
+import GlassView from '../../components/GlassView';
 
 const DIFFICULTY_COLOR: Record<string, 'sage' | 'gold' | 'error'> = {
   Kolay: 'sage',
@@ -191,7 +192,7 @@ export default function RecipesScreen() {
       {selectedRecipe && (
         <Modal animationType="fade" transparent visible onRequestClose={closeRecipe}>
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalSheet, { borderColor: colors.border, backgroundColor: solidSheetBg(colors) }, webBlur()]}>
+            <GlassView backgroundColor={solidSheetBg(colors)} blurAmount={26} style={[styles.modalSheet, { borderColor: colors.border }]}>
               <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
                 <View style={styles.modalHeader}>
                   <Text style={[styles.modalTitle, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>{selectedRecipe.name}</Text>
@@ -269,23 +270,12 @@ export default function RecipesScreen() {
                   </View>
                 )}
               </ScrollView>
-            </View>
+            </GlassView>
           </View>
         </Modal>
       )}
     </>
   );
-}
-
-function webBlur() {
-  return Platform.select({
-    web: {
-      // @ts-ignore web-only
-      backdropFilter: 'blur(26px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(26px) saturate(180%)',
-    } as any,
-    default: {},
-  });
 }
 
 function solidSheetBg(colors: any) {

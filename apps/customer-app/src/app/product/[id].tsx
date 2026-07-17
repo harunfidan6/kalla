@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useAuth } from '../../context/AuthContext';
@@ -7,6 +7,7 @@ import { useCart } from '../../context/CartContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts, formatTL } from '../../constants/theme';
 import GlassBackground from '../../components/GlassBackground';
+import GlassView from '../../components/GlassView';
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -146,9 +147,9 @@ export default function ProductDetailScreen() {
       <GlassBackground />
 
       <TouchableOpacity style={styles.backBtnWrapper} onPress={() => router.replace('/')}>
-        <View style={[styles.backBtn, { backgroundColor: colors.cardBgStrong, borderColor: colors.border }, webBlur(14)]}>
+        <GlassView backgroundColor={colors.cardBgStrong} blurAmount={14} style={[styles.backBtn, { borderColor: colors.border }]}>
           <Text style={[styles.backBtnText, { color: colors.text, fontFamily: Fonts.uiBold }]}>← Geri</Text>
-        </View>
+        </GlassView>
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -156,7 +157,7 @@ export default function ProductDetailScreen() {
           <Image source={{ uri: product.imageUrl }} style={styles.image} resizeMode="cover" />
         </View>
 
-        <View style={[styles.detailsContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }, webBlur(22)]}>
+        <GlassView backgroundColor={colors.cardBg} blurAmount={22} style={[styles.detailsContainer, { borderColor: colors.border }]}>
           <View style={styles.productHeader}>
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text style={[styles.categoryName, { color: colors.gold, fontFamily: Fonts.uiExtraBold }]}>{product.category?.name.toUpperCase()}</Text>
@@ -208,10 +209,10 @@ export default function ProductDetailScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </GlassView>
       </ScrollView>
 
-      <View style={[styles.bottomBar, { backgroundColor: colors.overlayBar, borderColor: colors.border }, webBlur(24)]}>
+      <GlassView backgroundColor={colors.overlayBar} blurAmount={24} style={[styles.bottomBar, { borderColor: colors.border }]}>
         <View>
           <Text style={[styles.totalLabel, { color: colors.textMuted, fontFamily: Fonts.uiBold }]}>TOPLAM TUTAR</Text>
           <Text style={[styles.totalPrice, { color: colors.text, fontFamily: Fonts.display }]}>{formatTL(totalPrice)}</Text>
@@ -221,13 +222,9 @@ export default function ProductDetailScreen() {
             <Text style={[styles.addButtonText, { fontFamily: Fonts.uiBold }]}>{confirming ? 'Eklendi ✓' : 'Sepete Ekle'}</Text>
           </Animated.View>
         </TouchableOpacity>
-      </View>
+      </GlassView>
     </View>
   );
-}
-
-function webBlur(px: number) {
-  return Platform.OS === 'web' ? ({ backdropFilter: `blur(${px}px) saturate(180%)`, WebkitBackdropFilter: `blur(${px}px) saturate(180%)` } as any) : {};
 }
 
 const styles = StyleSheet.create({

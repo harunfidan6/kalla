@@ -227,80 +227,92 @@ export default function WalletScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView keyboardShouldPersistTaps="handled">
-              {topupSuccess ? (
-                <View style={styles.successContainer}>
-                  <View style={[styles.successCircle, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.successCheck}>✓</Text>
-                  </View>
-                  <Text style={[styles.successText, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>Bakiye Yüklendi!</Text>
-                  <Text style={[styles.successSub, { color: colors.textSecondary, fontFamily: Fonts.ui }]}>{formatTL(Number(topupAmount))} cüzdanınıza eklendi.</Text>
-                </View>
-              ) : (
-                <>
-                  <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: Fonts.uiBold }]}>YÜKLENECEK TUTAR (TL)</Text>
-                  <TextInput
-                    style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBg, fontFamily: Fonts.displayItalic }]}
-                    keyboardType="numeric"
-                    value={topupAmount}
-                    onChangeText={setTopupAmount}
-                    placeholder="Tutar girin"
-                    placeholderTextColor={colors.textMuted}
+            {paymentPageUrl && Platform.OS !== 'web' && !topupSuccess ? (
+              // The native WebView must NOT sit inside a ScrollView — the parent ScrollView
+              // steals touch/scroll gestures from it on Android, making the iyzico page feel
+              // frozen (can't tap or scroll). It gets the full remaining modal space instead.
+              <View style={{ flex: 1, marginTop: 8 }}>
+                <Text style={[styles.inputLabel, { color: colors.text, marginBottom: 10, textAlign: 'center' }]}>Ödeme Bilgileri (iyzico Güvenli Sayfa)</Text>
+                <View style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}>
+                  <WebView
+                    source={{ uri: paymentPageUrl }}
+                    style={{ flex: 1, backgroundColor: '#ffffff' }}
+                    startInLoadingState
+                    renderLoading={() => (
+                      <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }]}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      </View>
+                    )}
+                    onNavigationStateChange={(navState) => {
+                      // Web'deki postMessage köprüsünün native karşılığı — bkz. cart.tsx.
+                      if (navState.url.includes('/orders/checkout-form/success')) {
+                        const match = navState.url.match(/[?&]token=([^&]+)/);
+                        if (match) handleTopupComplete(decodeURIComponent(match[1]));
+                      }
+                    }}
                   />
-
-                  <View style={styles.presetsRow}>
-                    {PRESETS.map((val) => (
-                      <TouchableOpacity
-                        key={val}
-                        style={[
-                          styles.presetBtn,
-                          { borderColor: colors.border },
-                          topupAmount === val && { backgroundColor: `${colors.primary}33`, borderColor: colors.primary },
-                        ]}
-                        onPress={() => setTopupAmount(val)}
-                      >
-                        <Text style={[styles.presetText, { color: colors.text, fontFamily: Fonts.uiSemiBold }]}>{val} TL</Text>
-                      </TouchableOpacity>
-                    ))}
+                </View>
+              </View>
+            ) : (
+              <ScrollView keyboardShouldPersistTaps="handled">
+                {topupSuccess ? (
+                  <View style={styles.successContainer}>
+                    <View style={[styles.successCircle, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.successCheck}>✓</Text>
+                    </View>
+                    <Text style={[styles.successText, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>Bakiye Yüklendi!</Text>
+                    <Text style={[styles.successSub, { color: colors.textSecondary, fontFamily: Fonts.ui }]}>{formatTL(Number(topupAmount))} cüzdanınıza eklendi.</Text>
                   </View>
+                ) : (
+                  <>
+                    <Text style={[styles.inputLabel, { color: colors.textSecondary, fontFamily: Fonts.uiBold }]}>YÜKLENECEK TUTAR (TL)</Text>
+                    <TextInput
+                      style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.inputBg, fontFamily: Fonts.displayItalic }]}
+                      keyboardType="numeric"
+                      value={topupAmount}
+                      onChangeText={setTopupAmount}
+                      placeholder="Tutar girin"
+                      placeholderTextColor={colors.textMuted}
+                    />
 
-                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                    <View style={styles.presetsRow}>
+                      {PRESETS.map((val) => (
+                        <TouchableOpacity
+                          key={val}
+                          style={[
+                            styles.presetBtn,
+                            { borderColor: colors.border },
+                            topupAmount === val && { backgroundColor: `${colors.primary}33`, borderColor: colors.primary },
+                          ]}
+                          onPress={() => setTopupAmount(val)}
+                        >
+                          <Text style={[styles.presetText, { color: colors.text, fontFamily: Fonts.uiSemiBold }]}>{val} TL</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
 
-                  {paymentPageUrl ? (
-                    <View pointerEvents="auto" style={{ marginTop: 20, height: 450 }}>
-                      <Text style={[styles.inputLabel, { color: colors.text, marginBottom: 10, textAlign: 'center' }]}>Ödeme Bilgileri (iyzico Güvenli Sayfa)</Text>
-                      {Platform.OS === 'web' ? (
+                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+                    {paymentPageUrl && Platform.OS === 'web' ? (
+                      <View pointerEvents="auto" style={{ marginTop: 20, height: 450 }}>
+                        <Text style={[styles.inputLabel, { color: colors.text, marginBottom: 10, textAlign: 'center' }]}>Ödeme Bilgileri (iyzico Güvenli Sayfa)</Text>
                         <iframe
                           src={paymentPageUrl}
                           style={{ width: '100%', height: 400, border: 'none', borderRadius: 12, backgroundColor: '#ffffff' } as any}
                           sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation"
                         />
-                      ) : (
-                        <View style={{ width: '100%', height: 400, borderRadius: 12, overflow: 'hidden' }}>
-                          <WebView
-                            source={{ uri: paymentPageUrl }}
-                            style={{ backgroundColor: '#ffffff' }}
-                            onNavigationStateChange={(navState) => {
-                              // Web'deki postMessage köprüsünün native karşılığı — bkz. cart.tsx.
-                              if (navState.url.includes('/orders/checkout-form/success')) {
-                                const match = navState.url.match(/[?&]token=([^&]+)/);
-                                if (match) handleTopupComplete(decodeURIComponent(match[1]));
-                              }
-                            }}
-                          />
-                        </View>
-                      )}
-                    </View>
-                  ) : (
-                    <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={handleTopupInit} disabled={topupLoading}>
-                      {topupLoading ? <ActivityIndicator size="small" color="#fdfdfb" /> : <Text style={[styles.submitBtnText, { fontFamily: Fonts.uiBold }]}>Kart Bilgilerini Gir</Text>}
-                    </TouchableOpacity>
-                  )}
+                      </View>
+                    ) : (
+                      <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={handleTopupInit} disabled={topupLoading}>
+                        {topupLoading ? <ActivityIndicator size="small" color="#fdfdfb" /> : <Text style={[styles.submitBtnText, { fontFamily: Fonts.uiBold }]}>Kart Bilgilerini Gir</Text>}
+                      </TouchableOpacity>
+                    )}
 
-                  {topupError && <Text style={[styles.modalError, { color: colors.error, marginTop: 12 }]}>{topupError}</Text>}
-                </>
-              )}
-            </ScrollView>
+                    {topupError && <Text style={[styles.modalError, { color: colors.error, marginTop: 12 }]}>{topupError}</Text>}
+                  </>
+                )}
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>

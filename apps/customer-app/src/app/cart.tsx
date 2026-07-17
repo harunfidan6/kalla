@@ -406,7 +406,18 @@ export default function CartScreen() {
 
       <Modal animationType="slide" transparent visible={paymentModalVisible} onRequestClose={() => setPaymentModalVisible(false)}>
         <View style={[styles.modalOverlay, { backgroundColor: colors.overlayBar }]}>
-          <GlassView blurType="heavy" style={[styles.modalContent, { borderTopLeftRadius: glass.radius.xl, borderTopRightRadius: glass.radius.xl, borderWidth: 0, borderTopWidth: 1 }]}>
+          <GlassView
+            blurType="heavy"
+            style={[
+              styles.modalContent,
+              { borderTopLeftRadius: glass.radius.xl, borderTopRightRadius: glass.radius.xl, borderWidth: 0, borderTopWidth: 1 },
+              // `modalContent` normally sizes itself to its content (maxHeight caps it at 85%),
+              // which works for the short success/no-card-needed states. The WebView needs an
+              // actual fixed height to flex into — without this, `flex: 1` on its wrapper has
+              // no defined parent height to fill and collapses to almost nothing.
+              paymentPageUrl && Platform.OS !== 'web' && remainingTL > 0 ? { height: '85%' } : null,
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>Güvenli Ödeme</Text>
               <TouchableOpacity onPress={() => setPaymentModalVisible(false)}>
@@ -420,6 +431,56 @@ export default function CartScreen() {
                   <Text style={styles.successCheck}>✓</Text>
                 </View>
                 <Text style={[styles.successText, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>Ödeme Başarılı!</Text>
+              </View>
+            ) : paymentPageUrl && Platform.OS !== 'web' && remainingTL > 0 ? (
+              // The native WebView must NOT sit inside a ScrollView — the parent ScrollView
+              // steals touch/scroll gestures from it on Android, making the iyzico page feel
+              // frozen (can't tap or scroll). Everything above it is short enough to render
+              // directly (no scrolling needed), and the WebView fills the remaining space.
+              <View style={{ flex: 1 }}>
+                <GlassView blurType="regular" style={[styles.paymentGlassPanel, { borderRadius: glass.radius.lg }]}>
+                  <View style={styles.walletToggleRow}>
+                    <View>
+                      <Text style={[styles.panelTitle, { color: colors.text, fontFamily: Fonts.uiBold }]}>Cüzdan Bakiyesi Kullan</Text>
+                      <Text style={[styles.panelSub, { color: colors.textSecondary, fontFamily: Fonts.ui }]}>Kullanılabilir: {formatTL(walletBalanceTL)}</Text>
+                    </View>
+                    <Switch value={useWallet} onValueChange={setUseWallet} trackColor={{ false: glass.border.color as string, true: colors.primary }} thumbColor="#FFFFFF" />
+                  </View>
+                </GlassView>
+
+                <GlassView blurType="subtle" style={[styles.summaryPanel, { borderRadius: glass.radius.lg, marginBottom: 16 }]}>
+                  <View style={[styles.summaryRow, { borderTopWidth: 1, borderTopColor: glass.border.color, paddingTop: 8, marginTop: 8 }]}>
+                    <Text style={{ color: colors.text, fontFamily: Fonts.uiBold }}>Ödenecek Tutar (Kart):</Text>
+                    <Text style={{ color: colors.gold, fontFamily: Fonts.display, fontSize: 16 }}>{formatTL(remainingTL)}</Text>
+                  </View>
+                </GlassView>
+
+                <GlassView blurType="regular" style={[styles.cardForm, { borderRadius: glass.radius.lg, flex: 1 }]}>
+                  <Text style={[styles.cardFormTitle, { color: colors.text, fontFamily: Fonts.uiBold, textAlign: 'center' }]}>Ödeme Bilgileri (iyzico Güvenli Sayfa)</Text>
+                  <View style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}>
+                    <WebView
+                      source={{ uri: paymentPageUrl }}
+                      style={{ flex: 1, backgroundColor: '#ffffff' }}
+                      startInLoadingState
+                      renderLoading={() => (
+                        <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }]}>
+                          <ActivityIndicator size="small" color={colors.primary} />
+                        </View>
+                      )}
+                      onNavigationStateChange={(navState) => {
+                        // Web'deki postMessage köprüsünün native karşılığı: iyzico'nun
+                        // yönlendirdiği başarı sayfasının URL'indeki token'ı doğrudan yakalıyoruz
+                        // (bkz. backend orders.controller.ts checkout-form/success).
+                        if (navState.url.includes('/orders/checkout-form/success')) {
+                          const match = navState.url.match(/[?&]token=([^&]+)/);
+                          if (match) handlePayment(decodeURIComponent(match[1]));
+                        }
+                      }}
+                    />
+                  </View>
+                </GlassView>
+
+                {paymentError && <Text style={[styles.errorText, { color: colors.error, marginVertical: 12 }]}>{paymentError}</Text>}
               </View>
             ) : (
               <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
@@ -454,29 +515,11 @@ export default function CartScreen() {
                   <GlassView blurType="regular" style={[styles.cardForm, { borderRadius: glass.radius.lg }]}>
                     <Text style={[styles.cardFormTitle, { color: colors.text, fontFamily: Fonts.uiBold, textAlign: 'center' }]}>Ödeme Bilgileri (iyzico Güvenli Sayfa)</Text>
                     {paymentPageUrl ? (
-                      Platform.OS === 'web' ? (
-                        <iframe
-                          src={paymentPageUrl}
-                          style={{ width: '100%', height: 420, border: 'none', borderRadius: 12, backgroundColor: '#ffffff' } as any}
-                          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation"
-                        />
-                      ) : (
-                        <View style={{ width: '100%', height: 420, borderRadius: 12, overflow: 'hidden' }}>
-                          <WebView
-                            source={{ uri: paymentPageUrl }}
-                            style={{ backgroundColor: '#ffffff' }}
-                            onNavigationStateChange={(navState) => {
-                              // Web'deki postMessage köprüsünün native karşılığı: iyzico'nun
-                              // yönlendirdiği başarı sayfasının URL'indeki token'ı doğrudan yakalıyoruz
-                              // (bkz. backend orders.controller.ts checkout-form/success).
-                              if (navState.url.includes('/orders/checkout-form/success')) {
-                                const match = navState.url.match(/[?&]token=([^&]+)/);
-                                if (match) handlePayment(decodeURIComponent(match[1]));
-                              }
-                            }}
-                          />
-                        </View>
-                      )
+                      <iframe
+                        src={paymentPageUrl}
+                        style={{ width: '100%', height: 420, border: 'none', borderRadius: 12, backgroundColor: '#ffffff' } as any}
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation"
+                      />
                     ) : (
                       <ActivityIndicator size="small" color={colors.primary} />
                     )}

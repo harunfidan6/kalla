@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts } from '../../constants/theme';
 import GlassBackground from '../../components/GlassBackground';
+import GlassView from '../../components/GlassView';
 import { LogoSvg } from '../../components/KallaIcons';
 
 export default function LoginScreen() {
@@ -39,7 +40,7 @@ export default function LoginScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <GlassBackground />
 
-      <View style={[styles.card, { backgroundColor: colors.cardBgStrong, borderColor: colors.border }, webBlur()]}>
+      <GlassView blurType="heavy" style={[styles.card, { borderColor: colors.border }]}>
         <View style={styles.brandHeader}>
           <View style={[styles.logoCircle, { backgroundColor: colors.cardBgStrong, borderColor: colors.border }]}>
             <LogoSvg size={30} color={colors.primary} />
@@ -99,20 +100,9 @@ export default function LoginScreen() {
             )}
           </LinearGradient>
         </TouchableOpacity>
-      </View>
+      </GlassView>
     </View>
   );
-}
-
-function webBlur() {
-  return Platform.select({
-    web: {
-      // @ts-ignore web-only
-      backdropFilter: 'blur(24px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-    } as any,
-    default: {},
-  });
 }
 
 const styles = StyleSheet.create({

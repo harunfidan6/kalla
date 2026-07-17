@@ -836,7 +836,7 @@ export class OrdersService {
         status: 'success',
         token: mockToken,
         checkoutFormContent: '<p>Mock payment form</p>',
-        paymentPageUrl: `http://localhost:4000/orders/checkout-form/success?token=${mockToken}`,
+        paymentPageUrl: `${process.env.API_BASE_URL || 'http://localhost:4000'}/orders/checkout-form/success?token=${mockToken}`,
       };
     }
 
@@ -857,7 +857,7 @@ export class OrdersService {
       installment: '1',
       basketId: orderId,
       paymentGroup: 'PRODUCT',
-      callbackUrl: 'http://localhost:4000/orders/checkout-form/callback',
+      callbackUrl: `${process.env.API_BASE_URL || 'http://localhost:4000'}/orders/checkout-form/callback`,
       buyer: {
         id: userId,
         name: userObj?.fullName.split(' ')[0] || 'Kalla',

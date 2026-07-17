@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Platform } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts } from '../../constants/theme';
 import ThemeSwitch from '../../components/ThemeSwitch';
+import ConfirmModal, { ConfirmModalState } from '../../components/ConfirmModal';
 import { useRouter, useIsFocused } from 'expo-router';
 
 interface Address {
@@ -29,6 +30,7 @@ export default function ProfileScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState<ConfirmModalState | null>(null);
 
   const loadAddresses = async () => {
     try {
@@ -63,13 +65,13 @@ export default function ProfileScreen() {
   };
 
   // react-native-web'in Alert.alert() implementasyonu tamamen no-op (hiçbir şey yapmıyor) —
-  // web'de çalışırken hem tekli hem çoklu buton içeren Alert.alert çağrıları sessizce hiçbir
-  // şey yapmıyordu (adres silme onayı hiç çıkmıyor, kaydetme hataları hiç görünmüyordu).
+  // web'de zaten window.alert kullanılıyor; native'de ise markasız OS diyaloğu yerine kendi
+  // ConfirmModal'ımızı gösteriyoruz (bkz. components/ConfirmModal.tsx).
   const notify = (title: string, message: string) => {
     if (Platform.OS === 'web') {
       window.alert(`${title}\n${message}`);
     } else {
-      Alert.alert(title, message);
+      setConfirmState({ title, message });
     }
   };
 
@@ -110,10 +112,14 @@ export default function ProfileScreen() {
       }
       return;
     }
-    Alert.alert('Adresi Sil', `"${address.label}" adresini silmek istediğinize emin misiniz?`, [
-      { text: 'Vazgeç', style: 'cancel' },
-      { text: 'Sil', style: 'destructive', onPress: doDelete },
-    ]);
+    setConfirmState({
+      title: 'Adresi Sil',
+      message: `"${address.label}" adresini silmek istediğinize emin misiniz?`,
+      cancelText: 'Vazgeç',
+      confirmText: 'Sil',
+      destructive: true,
+      onConfirm: doDelete,
+    });
   };
 
   const initial = (user?.fullName || '?').trim().charAt(0).toUpperCase();
@@ -227,6 +233,8 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      <ConfirmModal state={confirmState} onClose={() => setConfirmState(null)} />
     </View>
   );
 }

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Platform } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts } from '../../constants/theme';
 import { GUIDE_CONTENT, GuideSection } from '../../constants/guide';
+import ConfirmModal, { ConfirmModalState } from '../../components/ConfirmModal';
+import GlassView from '../../components/GlassView';
 
 export default function TrainingScreen() {
   const { user, apiFetch } = useAuth();
@@ -17,6 +19,7 @@ export default function TrainingScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedGuideSection, setSelectedGuideSection] = useState<GuideSection | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmModalState | null>(null);
 
   // Modül detay / video modali
   const [selectedModule, setSelectedModule] = useState<any>(null);
@@ -93,7 +96,7 @@ export default function TrainingScreen() {
       setQuizModalVisible(true);
     } catch (err: any) {
       if (Platform.OS === 'web') alert('Quiz soruları yüklenemedi.');
-      else Alert.alert('Hata', 'Quiz soruları yüklenemedi.');
+      else setConfirmState({ title: 'Hata', message: 'Quiz soruları yüklenemedi.' });
     } finally {
       setLoadingQuiz(false);
     }
@@ -107,7 +110,7 @@ export default function TrainingScreen() {
     const unansweredCount = quizQuestions.filter((q) => !selectedAnswers[q.id]).length;
     if (unansweredCount > 0) {
       if (Platform.OS === 'web') alert('Lütfen tüm soruları cevaplayın.');
-      else Alert.alert('Hata', 'Lütfen tüm soruları cevaplayın.');
+      else setConfirmState({ title: 'Hata', message: 'Lütfen tüm soruları cevaplayın.' });
       return;
     }
 
@@ -129,7 +132,7 @@ export default function TrainingScreen() {
       loadModules();
     } catch (err: any) {
       if (Platform.OS === 'web') alert('Quiz gönderilemedi: ' + err.message);
-      else Alert.alert('Hata', 'Quiz gönderilemedi: ' + err.message);
+      else setConfirmState({ title: 'Hata', message: 'Quiz gönderilemedi: ' + err.message });
     } finally {
       setSubmittingQuiz(false);
     }
@@ -271,7 +274,7 @@ export default function TrainingScreen() {
       {selectedModule && (
         <Modal animationType="fade" transparent visible onRequestClose={handleCloseDetailModal}>
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalSheet, { borderColor: colors.border, backgroundColor: solidSheetBg(colors) }, webBlur()]}>
+            <GlassView backgroundColor={solidSheetBg(colors)} blurAmount={26} style={[styles.modalSheet, { borderColor: colors.border }]}>
               <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
                 <View style={styles.modalHeader}>
                   <Text style={[styles.modalTitle, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>
@@ -354,7 +357,7 @@ export default function TrainingScreen() {
                   </LinearGradient>
                 </TouchableOpacity>
               </ScrollView>
-            </View>
+            </GlassView>
           </View>
         </Modal>
       )}
@@ -362,7 +365,7 @@ export default function TrainingScreen() {
       {/* Quiz bottom sheet */}
       <Modal animationType="fade" transparent visible={quizModalVisible} onRequestClose={() => setQuizModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { borderColor: colors.border, backgroundColor: solidSheetBg(colors) }, webBlur()]}>
+          <GlassView backgroundColor={solidSheetBg(colors)} blurAmount={26} style={[styles.modalSheet, { borderColor: colors.border }]}>
             <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>
@@ -420,7 +423,7 @@ export default function TrainingScreen() {
                 </LinearGradient>
               </TouchableOpacity>
             </ScrollView>
-          </View>
+          </GlassView>
         </View>
       </Modal>
 
@@ -428,7 +431,7 @@ export default function TrainingScreen() {
       {quizResult && (
         <Modal animationType="fade" transparent visible={resultModalVisible} onRequestClose={() => setResultModalVisible(false)}>
           <View style={styles.resultOverlay}>
-            <View style={[styles.resultCard, { borderColor: colors.border, backgroundColor: solidSheetBg(colors) }, webBlur()]}>
+            <GlassView backgroundColor={solidSheetBg(colors)} blurAmount={26} style={[styles.resultCard, { borderColor: colors.border }]}>
               <Text style={[styles.resultTitle, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>Quiz Sonucu</Text>
               <Text style={[styles.resultLine, { color: colors.textSecondary, fontFamily: Fonts.ui }]}>
                 Doğru:{' '}
@@ -465,7 +468,7 @@ export default function TrainingScreen() {
                   <Text style={[styles.actionBtnText, { fontFamily: Fonts.uiBold, fontSize: 12.5 }]}>Kapat</Text>
                 </LinearGradient>
               </TouchableOpacity>
-            </View>
+            </GlassView>
           </View>
         </Modal>
       )}
@@ -474,7 +477,7 @@ export default function TrainingScreen() {
       {selectedGuideSection && (
         <Modal animationType="fade" transparent visible onRequestClose={() => setSelectedGuideSection(null)}>
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalSheet, { borderColor: colors.border, backgroundColor: solidSheetBg(colors) }, webBlur()]}>
+            <GlassView backgroundColor={solidSheetBg(colors)} blurAmount={26} style={[styles.modalSheet, { borderColor: colors.border }]}>
               <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
                 <View style={styles.modalHeader}>
                   <Text style={[styles.modalTitle, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>
@@ -521,23 +524,14 @@ export default function TrainingScreen() {
                   );
                 })}
               </ScrollView>
-            </View>
+            </GlassView>
           </View>
         </Modal>
       )}
+
+      <ConfirmModal state={confirmState} onClose={() => setConfirmState(null)} />
     </>
   );
-}
-
-function webBlur() {
-  return Platform.select({
-    web: {
-      // @ts-ignore web-only
-      backdropFilter: 'blur(26px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(26px) saturate(180%)',
-    } as any,
-    default: {},
-  });
 }
 
 function solidSheetBg(colors: any) {
