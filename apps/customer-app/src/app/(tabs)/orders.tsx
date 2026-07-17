@@ -122,11 +122,19 @@ export default function OrdersScreen() {
   // "Ödeme Bekleniyor" siparişlerinde kart bilgisi girilmeden ekrandan çıkılırsa (uygulama
   // kapatılırsa, geri tuşuna basılırsa vb.) ödemeye dönecek bir yol yoktu — sepetteki orijinal
   // ödeme akışını (initialize → WebView → checkout) aynı orderId ile burada tekrar çalıştırıyoruz.
+  // react-native-webview's onNavigationStateChange fires on every navigation state change,
+  // not once per URL — without this guard the success URL could trigger this handler several
+  // times with the same token, sending duplicate /checkout requests (see wallet.tsx for the
+  // exact bug this caused: the first request succeeds, the second hits the backend's
+  // idempotency check and fails, which looks like "500 error, but the order still got paid").
+  const completedResumeTokenRef = useRef<string | null>(null);
+
   const openResumePayment = async (orderId: string) => {
     setResumeOrderId(orderId);
     setResumePaymentUrl(null);
     setResumeError(null);
     setResumeLoading(true);
+    completedResumeTokenRef.current = null;
     try {
       const result = await apiFetch(`/orders/${orderId}/checkout-form/initialize`, {
         method: 'POST',
@@ -142,6 +150,8 @@ export default function OrdersScreen() {
 
   const completeResumePayment = async (token: string) => {
     if (!resumeOrderId) return;
+    if (completedResumeTokenRef.current === token) return;
+    completedResumeTokenRef.current = token;
     setResumeLoading(true);
     setResumeError(null);
     try {

@@ -309,7 +309,16 @@ export class WalletService {
         });
       });
     } catch (e: any) {
-      if (e.code === 'P2002' && e.meta?.target?.includes('idempotency_key')) {
+      // The only unique field written inside this transaction is idempotencyKey, so any P2002
+      // here means this exact iyzico payment was already credited (e.g. the client's WebView
+      // fired onNavigationStateChange more than once for the same successful redirect and
+      // called this endpoint twice). Matching on e.meta?.target here used to also require the
+      // target to literally include the string 'idempotency_key', but Prisma's P2002 error
+      // shape for this isn't consistent across providers/versions (sometimes an array of field
+      // names, sometimes the raw constraint name) — that mismatch let the raw Prisma error
+      // through as an unhandled 500 while the first (successful) request had already committed,
+      // which is exactly what looked like "500 error, but the balance still went up".
+      if (e.code === 'P2002') {
         throw new BadRequestException('Bu ödeme zaten işlendi, cüzdanınıza tekrar bakiye eklenmedi.');
       }
       throw e;

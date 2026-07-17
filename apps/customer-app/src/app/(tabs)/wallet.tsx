@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform, TouchableOpacity, Modal, TextInput, ScrollView, Switch } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -61,6 +61,7 @@ export default function WalletScreen() {
     setTopupLoading(true);
     setTopupError(null);
     setPaymentPageUrl(null);
+    completedTopupTokenRef.current = null;
     try {
       const initResult = await apiFetch('/wallet/topup-form/initialize', {
         method: 'POST',
@@ -74,7 +75,16 @@ export default function WalletScreen() {
     }
   };
 
+  // react-native-webview's onNavigationStateChange fires on every navigation state change
+  // (load start, progress, load end, ...), not once per URL — without this guard the success
+  // URL could trigger this handler several times with the same token, sending duplicate
+  // /wallet/topup requests. The first one credits the wallet; the second hits the backend's
+  // idempotency check and fails, which looked like "500 error, but the balance still went up".
+  const completedTopupTokenRef = useRef<string | null>(null);
+
   const handleTopupComplete = async (token: string) => {
+    if (completedTopupTokenRef.current === token) return;
+    completedTopupTokenRef.current = token;
     setTopupLoading(true);
     setTopupError(null);
     try {

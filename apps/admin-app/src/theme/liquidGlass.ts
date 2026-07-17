@@ -38,6 +38,10 @@ export function getGlassTokens(mode: ThemeMode) {
       ...glassMetrics.shadow,
       innerHighlight: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.55)',
     },
+    // Peak opacity of the off-center radial "light hitting glass" highlight (native only —
+    // see GlassView.tsx). Dark surfaces are already near-opaque black, so a light-theme-strength
+    // highlight would look like a flashlight; dark gets a much dimmer one.
+    highlightOpacity: isDark ? 0.16 : 0.5,
     gradient: {
       glassLight: isDark
         ? ['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.04)']

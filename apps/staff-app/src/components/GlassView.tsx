@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 
 interface GlassViewProps {
@@ -62,19 +62,25 @@ export default function GlassView({
   // tree and crashes the app with a native stack overflow (SIGSEGV in RenderThread). BlurView
   // itself (even with no blur method) was then dropped too — with `blurMethod` unset it did no
   // blurring at all, only its own tint, and its layout didn't reliably fill dynamically-sized
-  // cards, leaving a visible seam where it undersized against its sibling layers. A diagonal
-  // glassLight gradient sheen + a bright top rim-line (already defined in the design tokens but
-  // never wired up) stand in for it instead — the same "glossy glass" cue without a live blur.
+  // cards, leaving a visible seam where it undersized against its sibling layers.
+  // A corner-to-corner LinearGradient was tried next, but on wide/short cards its perceptible
+  // change is compressed into the corners, leaving a large visually-flat "dead zone" in the
+  // middle — exactly the "beyazlık" (flat white patch) reported. An off-center RadialGradient
+  // (same technique already used for the background blobs) reads as a soft light source hitting
+  // glass instead, and its falloff is visible across the whole card, not just the diagonal.
   return (
     <View style={[styles.glassContainer, shapeStyle, style]}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: surfaceColor }]} />
-      <LinearGradient
-        colors={glass.gradient.glassLight as unknown as [string, string]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
+      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Defs>
+          <RadialGradient id="glassHighlight" cx="26%" cy="16%" r="90%">
+            <Stop offset="0%" stopColor="#ffffff" stopOpacity={glass.highlightOpacity} />
+            <Stop offset="55%" stopColor="#ffffff" stopOpacity={glass.highlightOpacity * 0.35} />
+            <Stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#glassHighlight)" />
+      </Svg>
       <View style={[styles.topHighlight, { backgroundColor: glass.shadow.innerHighlight }]} pointerEvents="none" />
       {children}
     </View>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Platform, ScrollView, Modal, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
@@ -155,6 +155,7 @@ export default function CartScreen() {
           });
           setPaymentPageUrl(initResult.paymentPageUrl);
           setCreatedOrderId(orderData.id);
+          completedPaymentTokenRef.current = null;
           setPaymentModalVisible(true);
         } else {
           await apiFetch(`/orders/${orderData.id}/checkout`, {
@@ -181,8 +182,17 @@ export default function CartScreen() {
     router.replace('/orders');
   };
 
+  // react-native-webview's onNavigationStateChange fires on every navigation state change,
+  // not once per URL — without this guard the success URL could trigger handlePayment several
+  // times with the same token, sending duplicate /checkout requests (see wallet.tsx for the
+  // exact bug this caused: the first request succeeds, the second hits the backend's
+  // idempotency check and fails, which looks like "500 error, but the order still got paid").
+  const completedPaymentTokenRef = useRef<string | null>(null);
+
   const handlePayment = async (token: string) => {
     if (!createdOrderId) return;
+    if (completedPaymentTokenRef.current === token) return;
+    completedPaymentTokenRef.current = token;
     setPaymentLoading(true);
     setPaymentError(null);
 
