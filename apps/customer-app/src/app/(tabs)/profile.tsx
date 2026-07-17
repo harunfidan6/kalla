@@ -122,6 +122,55 @@ export default function ProfileScreen() {
     });
   };
 
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  const doDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      await apiFetch('/users/me', { method: 'DELETE' });
+      await logout();
+      router.replace('/(auth)/login');
+    } catch (err: any) {
+      notify('Hata', err.message || 'Hesap silinemedi.');
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
+  // 2 aşamalı onay (bkz. yasal_metinler.txt Bölüm 5): tek dokunuşla kalıcı hesap silme
+  // yerine iki ayrı, birbirini tetikleyen ConfirmModal — ilki genel uyarı, ikincisi
+  // (destructive) nihai onay.
+  const handleDeleteAccount = () => {
+    const finalConfirm = () => {
+      setConfirmState({
+        title: 'Son Onay',
+        message: 'Bu işlem geri alınamaz. Hesabınız ve kişisel bilgileriniz kalıcı olarak silinecek. Devam etmek istiyor musunuz?',
+        cancelText: 'Vazgeç',
+        confirmText: 'Evet, Hesabımı Sil',
+        destructive: true,
+        onConfirm: doDeleteAccount,
+      });
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Hesabınızı silmek üzeresiniz. Devam etmek istediğinize emin misiniz?')) {
+        if (window.confirm('Bu işlem geri alınamaz. Hesabınız kalıcı olarak silinecek. Son kez onaylıyor musunuz?')) {
+          doDeleteAccount();
+        }
+      }
+      return;
+    }
+
+    setConfirmState({
+      title: 'Hesabımı Sil',
+      message: 'Hesabınızı silmek üzeresiniz. Kişisel verileriniz kalıcı olarak silinecek, geçmiş siparişleriniz ise yasal saklama süresi boyunca anonim olarak korunacaktır.',
+      cancelText: 'Vazgeç',
+      confirmText: 'Devam Et',
+      destructive: true,
+      onConfirm: finalConfirm,
+    });
+  };
+
   const initial = (user?.fullName || '?').trim().charAt(0).toUpperCase();
 
   // See index.tsx for why this guard is needed (react-native-screens web tab bleed-through).
@@ -190,8 +239,20 @@ export default function ProfileScreen() {
           <ThemeSwitch value={theme === 'dark'} onToggle={toggleTheme} trackColorOn={colors.switchTrack} trackColorOff={colors.switchTrack} />
         </View>
 
+        <TouchableOpacity onPress={() => router.push('/legal')} style={styles.legalLinkBtn}>
+          <Text style={[styles.legalLinkText, { color: colors.textSecondary, fontFamily: Fonts.uiSemiBold }]}>Yasal Bilgiler</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
           <Text style={[styles.logoutText, { color: colors.error, fontFamily: Fonts.uiBold }]}>Çıkış Yap</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleDeleteAccount} disabled={deletingAccount} style={styles.deleteAccountBtn}>
+          {deletingAccount ? (
+            <ActivityIndicator size="small" color={colors.error} />
+          ) : (
+            <Text style={[styles.deleteAccountText, { color: colors.error, fontFamily: Fonts.ui }]}>Hesabımı Sil</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
 
@@ -262,8 +323,12 @@ const styles = StyleSheet.create({
   actionLink: { fontSize: 11 },
   themeRow: { padding: 14, borderRadius: 16, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   themeRowText: { fontSize: 12 },
+  legalLinkBtn: { alignItems: 'center', marginBottom: 14 },
+  legalLinkText: { fontSize: 12 },
   logoutBtn: { alignItems: 'center' },
   logoutText: { fontSize: 12 },
+  deleteAccountBtn: { alignItems: 'center', marginTop: 18 },
+  deleteAccountText: { fontSize: 11 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end' },
   modalCard: { maxHeight: '85%', padding: 24, borderWidth: 1, borderBottomWidth: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },

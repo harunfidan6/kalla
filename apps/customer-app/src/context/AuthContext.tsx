@@ -29,6 +29,15 @@ const getBackendUrl = () => {
 
 export const API_URL = getBackendUrl();
 
+// Product images are stored as backend-relative paths (e.g. "/public/espresso.png").
+// On web that resolves fine against the page's own origin, but React Native's <Image
+// source={{uri}}> has no notion of "current origin" on native — it needs a full URL.
+export function resolveImageUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
 const saveSecureToken = async (key: string, value: string) => {
   if (Platform.OS === 'web') {
     await AsyncStorage.setItem(key, value);
@@ -63,6 +72,8 @@ interface AuthContextType {
     phone: string,
     password: string,
     fullName: string,
+    kvkkAccepted: boolean,
+    marketingOptIn: boolean,
     birthday?: string
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -133,6 +144,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     phone: string,
     password: string,
     fullName: string,
+    kvkkAccepted: boolean,
+    marketingOptIn: boolean,
     birthday?: string
   ) => {
     try {
@@ -143,6 +156,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fullName,
         role: Role.CUSTOMER,
         birthday: birthday || undefined,
+        kvkkAccepted,
+        marketingOptIn,
       };
 
       const response = await fetch(`${API_URL}/auth/register`, {

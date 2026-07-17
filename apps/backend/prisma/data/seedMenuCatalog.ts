@@ -49,6 +49,7 @@ export async function seedMenuCatalog(prisma: PrismaClient) {
           description: p.description,
           price: p.price,
           categoryId: category.id,
+          imageUrl: p.imageUrl ?? existing.imageUrl,
           isAvailable: true,
         },
       });
@@ -59,7 +60,7 @@ export async function seedMenuCatalog(prisma: PrismaClient) {
           description: p.description,
           price: p.price,
           categoryId: category.id,
-          imageUrl: null,
+          imageUrl: p.imageUrl ?? null,
           isAvailable: true,
         },
       });

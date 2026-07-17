@@ -27,10 +27,10 @@ const products = [
   // 2. Soğuk Klasikler
   { name: 'Iced Americano', category: 'Soğuk Klasikler', price: 80.0, description: 'Bol buz ve soğuk su ile ferahlatıcı çift shot espresso.', imageUrl: '/public/iced_americano.png' },
   { name: 'Iced Latte', category: 'Soğuk Klasikler', price: 90.0, description: 'Soğuk süt, buz ve espressonun eşsiz katmanlı sunumu.', imageUrl: '/public/iced_latte.png' },
-  { name: 'Iced Flat White', category: 'Soğuk Klasikler', price: 95.0, description: 'Çift shot espresso ve soğuk sütün yoğun buzlu birleşimi.', imageUrl: '/public/iced_latte.png' },
-  { name: 'Iced Cappuccino', category: 'Soğuk Klasikler', price: 95.0, description: 'Buzlu soğuk süt ve espresso üzerine soğuk süt köpüğü.', imageUrl: '/public/iced_latte.png' },
-  { name: 'Iced Mocha', category: 'Soğuk Klasikler', price: 100.0, description: 'Çikolata sosu, espresso, soğuk süt ve buz.', imageUrl: '/public/iced_latte.png' },
-  { name: 'Iced White Mocha', category: 'Soğuk Klasikler', price: 100.0, description: 'Beyaz çikolata soslu, buzlu ve espressolu soğuk kahve.', imageUrl: '/public/iced_latte.png' },
+  { name: 'Iced Flat White', category: 'Soğuk Klasikler', price: 95.0, description: 'Çift shot espresso ve soğuk sütün yoğun buzlu birleşimi.', imageUrl: '/public/iced_flat_white.png' },
+  { name: 'Iced Cappuccino', category: 'Soğuk Klasikler', price: 95.0, description: 'Buzlu soğuk süt ve espresso üzerine soğuk süt köpüğü.', imageUrl: '/public/iced_cappuccino.png' },
+  { name: 'Iced Mocha', category: 'Soğuk Klasikler', price: 100.0, description: 'Çikolata sosu, espresso, soğuk süt ve buz.', imageUrl: '/public/iced_mocha.png' },
+  { name: 'Iced White Mocha', category: 'Soğuk Klasikler', price: 100.0, description: 'Beyaz çikolata soslu, buzlu ve espressolu soğuk kahve.', imageUrl: '/public/iced_white_mocha.png' },
   { name: 'Cold Brew (Klasik)', category: 'Soğuk Klasikler', price: 90.0, description: '18 saat boyunca soğuk suda demlenmiş pürüzsüz gövdeli soğuk filtre kahve.', imageUrl: '/public/cold_brew.png' },
   { name: 'Nitro Cold Brew', category: 'Soğuk Klasikler', price: 100.0, description: 'Azot gazıyla köpürtülmüş, krema kıvamında kadifemsi soğuk kahve.', imageUrl: '/public/cold_brew.png' },
   { name: 'Affogato al Caffè', category: 'Soğuk Klasikler', price: 95.0, description: 'Vanilyalı dondurma üzerine dökülen sıcak double shot espresso.', imageUrl: '/public/espresso.png' },
@@ -43,7 +43,7 @@ const products = [
   { name: 'Källa Velvet Latte', category: 'Sıcak Karışımlar', price: 105.0, description: 'Gül esansı, beyaz çikolata, espresso ve pembe süt köpüğü.', imageUrl: '/public/kalla_velvet_latte.png' },
   { name: 'Fjord Spiced Flat White', category: 'Sıcak Karışımlar', price: 105.0, description: 'Kakule esintisi, akçaağaç şurubu, çift shot espresso ve kadifemsi süt.', imageUrl: '/public/fjord_flat_white.png' },
   { name: 'Nordic Forest Mocha', category: 'Sıcak Karışımlar', price: 110.0, description: 'Koyu çikolata, yaban mersini özü, double espresso ve süt kreması.', imageUrl: '/public/mocha.png' },
-  { name: 'Linen Amber Brew', category: 'Sıcak Karışımlar', price: 100.0, description: 'Tuzlu karamel, hafif esmer şeker esintisi, filtre kahve ve krema sütün uyumu.', imageUrl: '/public/latte.png' },
+  { name: 'Linen Amber Brew', category: 'Sıcak Karışımlar', price: 100.0, description: 'Tuzlu karamel, hafif esmer şeker esintisi, filtre kahve ve krema sütün uyumu.', imageUrl: '/public/linen_amber_brew.png' },
   { name: 'Smoky Roastery Latte', category: 'Sıcak Karışımlar', price: 105.0, description: 'Meşe odunu tütsüsü aromalı karamel sos, espresso ve süt.', imageUrl: '/public/latte.png' },
   { name: 'Polar Hazelnut Crunch', category: 'Sıcak Karışımlar', price: 110.0, description: 'Fındık pralini sosu, espresso, süt ve üzerinde kıtır fındık parçacıkları.', imageUrl: '/public/latte.png' },
   { name: 'Cinnamon Birch Latte', category: 'Sıcak Karışımlar', price: 100.0, description: 'Huş ağacı şurubu esintisi, yoğun tarçın aroması, espresso ve süt.', imageUrl: '/public/latte.png' },
@@ -60,7 +60,7 @@ const products = [
   { name: 'Chai Latte Macchiato', category: 'Sıcak Karışımlar', price: 100.0, description: 'Chai baharatları, siyah çay özü ve bol süt köpüğü.', imageUrl: '/public/latte.png' },
 
   // 4. Soğuk Karışımlar & İmza Lezzetler
-  { name: 'Aurora Cold Brew', category: 'Soğuk Karışımlar', price: 110.0, description: 'Soğuk demlenmiş kahve, tonik, mürver çiçeği şurubu ve kurutulmuş narenciye dilimi.', imageUrl: '/public/cold_brew.png' },
+  { name: 'Aurora Cold Brew', category: 'Soğuk Karışımlar', price: 110.0, description: 'Soğuk demlenmiş kahve, tonik, mürver çiçeği şurubu ve kurutulmuş narenciye dilimi.', imageUrl: '/public/aurora_cold_brew.png' },
   { name: 'Midnight Sun Latte', category: 'Soğuk Karışımlar', price: 110.0, description: 'Aktif karbon (siyah renk), tuzlu karamel sosu, soğuk süt, buz ve espresso.', imageUrl: '/public/iced_latte.png' },
   { name: 'Polar Berry Shakerato', category: 'Soğuk Karışımlar', price: 105.0, description: 'Espresso shotları, ahududu-böğürtlen püresi ve buz ile shakerda çalkalanmış meyveli kahve.', imageUrl: '/public/espresso.png' },
   { name: 'Glacier Mint Mocha', category: 'Soğuk Karışımlar', price: 115.0, description: 'Taze nane yağı esintisi, bitter çikolata şurubu, buz, süt ve espresso.', imageUrl: '/public/iced_latte.png' },
@@ -75,8 +75,8 @@ const products = [
   { name: 'Iced Pistachio Matcha', category: 'Soğuk Karışımlar', price: 120.0, description: 'Buzlu Matcha çayı, antep fıstığı şurubu ve soğuk süt.', imageUrl: '/public/iced_latte.png' },
   { name: 'Eucalyptus Iced Brew', category: 'Soğuk Karışımlar', price: 105.0, description: 'Okaliptüs yaprağı şurubu, filtre kahve, buz ve maden suyu.', imageUrl: '/public/cold_brew.png' },
   { name: 'Smoked Vanilla Iced Brew', category: 'Soğuk Karışımlar', price: 110.0, description: 'Tütsülenmiş vanilya çubuğu şurubu, soğuk süt, buz ve Cold Brew.', imageUrl: '/public/cold_brew.png' },
-  { name: 'Watermelon Espresso Tonic', category: 'Soğuk Karışımlar', price: 110.0, description: 'Karpuz püresi, tonik, buz ve espresso shotı.', imageUrl: '/public/cold_brew.png' },
-  { name: 'Tonic Ginger Espresso', category: 'Soğuk Karışımlar', price: 110.0, description: 'Taze zencefil özütü, tonik, buz ve double shot espresso.', imageUrl: '/public/cold_brew.png' },
+  { name: 'Watermelon Espresso Tonic', category: 'Soğuk Karışımlar', price: 110.0, description: 'Karpuz püresi, tonik, buz ve espresso shotı.', imageUrl: '/public/watermelon_espresso_tonic.png' },
+  { name: 'Tonic Ginger Espresso', category: 'Soğuk Karışımlar', price: 110.0, description: 'Taze zencefil özütü, tonik, buz ve double shot espresso.', imageUrl: '/public/espresso_tonic.png' },
   { name: 'Iced Chai Cream Tea', category: 'Soğuk Karışımlar', price: 100.0, description: 'Buzlu Chai çayı üzerinde kalın, soğuk vanilyalı krema katmanı.', imageUrl: '/public/iced_latte.png' },
 
   // 5. Bitki Çayları & Demlemeler
@@ -87,10 +87,10 @@ const products = [
   { name: 'Linden & Pine Honey', category: 'Bitki Çayları', price: 80.0, description: 'Taze ıhlamur çiçekleri, süzme çam balı ve limon dilimi.', imageUrl: '/public/filter_coffee.png' },
   { name: 'Mint & Ginger Detox', category: 'Bitki Çayları', price: 75.0, description: 'Taze nane yaprakları, dilimlenmiş taze zencefil ve limon kabukları.', imageUrl: '/public/filter_coffee.png' },
   { name: 'Iced Hibiscus Berry Tea', category: 'Bitki Çayları', price: 85.0, description: 'Hibiskus çayının buz, çilek ve ahududu taneleriyle soğuk demlenmesi.', imageUrl: '/public/iced_latte.png' },
-  { name: 'Iced Matcha Lemonade', category: 'Bitki Çayları', price: 95.0, description: 'Premium yeşil çay Matcha ve ev yapımı taze limonatanın buzlu karışımı.', imageUrl: '/public/iced_latte.png' },
+  { name: 'Iced Matcha Lemonade', category: 'Bitki Çayları', price: 95.0, description: 'Premium yeşil çay Matcha ve ev yapımı taze limonatanın buzlu karışımı.', imageUrl: '/public/iced_matcha_lemonade.png' },
   { name: 'Mürver Çiçeği & Elmalı Soğuk Çay', category: 'Bitki Çayları', price: 85.0, description: 'Mürver çiçeği, yeşil elma dilimleri, soğuk yeşil çay ve buz.', imageUrl: '/public/iced_latte.png' },
   { name: 'Lavender & Lemon Iced Infusion', category: 'Bitki Çayları', price: 85.0, description: 'Lavanta çayı, taze limon suyu, buz ve bal.', imageUrl: '/public/iced_latte.png' },
-  { name: 'Chai Tea Latte (Sıcak)', category: 'Bitki Çayları', price: 85.0, description: 'Geleneksel Chai baharatları, siyah çay, sıcak süt ve kadifemsi köpük.', imageUrl: '/public/latte.png' },
+  { name: 'Chai Tea Latte (Sıcak)', category: 'Bitki Çayları', price: 85.0, description: 'Geleneksel Chai baharatları, siyah çay, sıcak süt ve kadifemsi köpük.', imageUrl: '/public/chai_tea_latte.png' },
   { name: 'Chamomile Lavender Infusion', category: 'Bitki Çayları', price: 80.0, description: 'Kurutulmuş papatya çiçekleri ve lavanta harmanlı dinlendirici sıcak çay.', imageUrl: '/public/filter_coffee.png' },
 
   // 6. Pastane

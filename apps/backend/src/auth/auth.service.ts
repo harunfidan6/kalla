@@ -130,6 +130,9 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto, meta?: { ipAddress?: string; userAgent?: string }) {
+    if (!registerDto.kvkkAccepted) {
+      throw new BadRequestException('Kullanıcı Sözleşmesi ve KVKK Aydınlatma Metni onayı olmadan kayıt olunamaz.');
+    }
     const user = await this.usersService.create(registerDto, Role.CUSTOMER);
     return this.login(user, meta);
   }

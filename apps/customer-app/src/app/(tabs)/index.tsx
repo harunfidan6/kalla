@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter, useIsFocused } from 'expo-router';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, resolveImageUrl } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts, formatTL } from '../../constants/theme';
@@ -164,7 +164,7 @@ export default function MenuScreen() {
             <TouchableOpacity key={item.id} onPress={() => router.push(`/product/${item.id}`)}>
               <View style={[styles.productCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <View style={styles.productImageWrap}>
-                  <Image source={{ uri: item.imageUrl }} style={styles.productImage} resizeMode="cover" />
+                  <Image source={{ uri: resolveImageUrl(item.imageUrl) }} style={styles.productImage} resizeMode="cover" />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={styles.productTopRow}>

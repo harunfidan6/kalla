@@ -10,6 +10,8 @@ import GlassBackground from '../components/GlassBackground';
 import GlassView from '../components/GlassView';
 import { BasketIcon, GelAlIcon, PaketIcon, OdemeIcon } from '../components/KallaIcons';
 import { WebView } from 'react-native-webview';
+import LegalTextModal from '../components/LegalTextModal';
+import { LEGAL_SECTIONS, LegalSection } from '../constants/legalTexts';
 
 // Bilgilendirme amaçlı istemci tahmini — gerçek indirim her zaman sunucuda
 // (apps/backend/src/orders/orders.service.ts, TIER_DISCOUNT_RATES) hesaplanır ve
@@ -42,6 +44,9 @@ export default function CartScreen() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [distanceSalesAccepted, setDistanceSalesAccepted] = useState(false);
+  const [legalSection, setLegalSection] = useState<LegalSection | null>(null);
+  const distanceSalesText = LEGAL_SECTIONS.find((s) => s.key === 'distanceSales')!;
 
   const [branches, setBranches] = useState<any[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
@@ -115,6 +120,10 @@ export default function CartScreen() {
     }
     if (!selectedBranchId) {
       setError('Lütfen siparişinizi karşılayacak bir şube seçin.');
+      return;
+    }
+    if (!distanceSalesAccepted) {
+      setError('Devam etmek için Mesafeli Satış Sözleşmesi\'ni onaylamanız gerekir.');
       return;
     }
 
@@ -391,8 +400,24 @@ export default function CartScreen() {
           </GlassView>
         )}
 
+        <View style={styles.checkboxRow}>
+          <TouchableOpacity onPress={() => setDistanceSalesAccepted((v) => !v)}>
+            <View style={[styles.checkboxBox, { borderColor: colors.border }, distanceSalesAccepted && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+              {distanceSalesAccepted && <Text style={styles.checkboxMark}>✓</Text>}
+            </View>
+          </TouchableOpacity>
+          {/* Bağlantıyı bir TouchableOpacity'nin içine koymak dokunuşu ebeveyn Touchable'a
+              kaptırıyordu (bkz. register.tsx) — etiket artık ayrı, dokunulabilir olmayan
+              bir sarmalayıcıda; iç içe Text onPress'ler doğru şekilde kendi dokunuşunu alıyor. */}
+          <Text style={[styles.checkboxLabel, { color: colors.textSecondary, fontFamily: Fonts.ui }]} onPress={() => setDistanceSalesAccepted((v) => !v)}>
+            <Text onPress={() => setLegalSection(distanceSalesText)} style={{ color: colors.gold, fontFamily: Fonts.uiSemiBold }}>Mesafeli Satış Sözleşmesi</Text>
+            {"'ni okudum ve onaylıyorum."}
+          </Text>
+        </View>
+
         {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
       </ScrollView>
+      <LegalTextModal section={legalSection} onClose={() => setLegalSection(null)} />
 
       <GlassView blurType="heavy" style={[styles.bottomBar, { borderTopLeftRadius: glass.radius.xl, borderTopRightRadius: glass.radius.xl, borderWidth: 0, borderTopWidth: 1 }]}>
         <View>
@@ -575,6 +600,10 @@ const styles = StyleSheet.create({
   branchDistance: { fontSize: 11, flexShrink: 0 },
   discountPreviewCard: { padding: 14, marginTop: 16, borderWidth: 1, gap: 6 },
   errorText: { fontSize: 12, textAlign: 'center', marginTop: 12, fontWeight: 'bold' },
+  checkboxRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 8 },
+  checkboxBox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  checkboxMark: { color: '#fdfdfb', fontSize: 12, fontWeight: '700' },
+  checkboxLabel: { flex: 1, fontSize: 11.5, lineHeight: 17 },
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 84, paddingHorizontal: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   totalLabel: { fontSize: 9, letterSpacing: 1, marginBottom: 2 },
   totalPrice: { fontSize: 20 },

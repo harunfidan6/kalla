@@ -4,6 +4,7 @@ import { RegisterDto } from '../auth/dto/register.dto';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { Role } from '@kafe/shared-types';
 
 @Injectable()
@@ -11,7 +12,7 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async create(registerDto: RegisterDto, role: Role = Role.CUSTOMER) {
-    const { email, phone, password, fullName, position, employeeCode, birthday } = registerDto;
+    const { email, phone, password, fullName, position, employeeCode, birthday, kvkkAccepted, marketingOptIn } = registerDto;
 
     // Check if email already exists
     const existingEmail = await this.prisma.user.findUnique({
@@ -35,6 +36,7 @@ export class UsersService {
     // Use Prisma transaction to create user and profile
     return this.prisma.$transaction(async (tx) => {
       // 1. Create User
+      const now = new Date();
       const user = await tx.user.create({
         data: {
           email,
@@ -42,6 +44,10 @@ export class UsersService {
           passwordHash,
           role: role as any, // Cast to Prisma enum type
           fullName,
+          kvkkAccepted: !!kvkkAccepted,
+          kvkkAcceptedAt: kvkkAccepted ? now : null,
+          marketingOptIn: !!marketingOptIn,
+          marketingOptInAt: marketingOptIn ? now : null,
         },
       });
 
@@ -170,6 +176,41 @@ export class UsersService {
     await this.findOwnedAddress(userId, addressId);
     await this.prisma.address.delete({ where: { id: addressId } });
     return { success: true };
+  }
+
+  // "Hesabımı Sil" — VUK gereği geçmiş sipariş/fatura kayıtları 10 yıl saklanmak zorunda
+  // olduğundan (bkz. schema.prisma: Order.customer ilişkisi onDelete: Cascade — User satırını
+  // silmek tüm siparişlerini de silerdi), kullanıcı satırı SİLİNMEZ; kişisel tanımlayıcı
+  // alanlar (ad, e-posta, telefon, şifre) anonimleştirilerek üzerine yazılır. Adresler ve
+  // refresh token'lar (IP/user-agent logları dahil) kalıcı olarak silinir.
+  async deleteAccount(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    const anonymizedSuffix = userId.slice(0, 8);
+    const unusablePasswordHash = await bcrypt.hash(crypto.randomUUID(), 10);
+
+    await this.prisma.$transaction([
+      this.prisma.address.deleteMany({ where: { userId } }),
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          fullName: 'Anonim Üye',
+          email: `silinmis-${anonymizedSuffix}@anonim.kallacoffeeco.com`,
+          phone: `0000000000${anonymizedSuffix}`,
+          passwordHash: unusablePasswordHash,
+          kvkkAccepted: false,
+          kvkkAcceptedAt: null,
+          marketingOptIn: false,
+          marketingOptInAt: null,
+        },
+      }),
+    ]);
+
+    return { message: 'Hesabınız silindi. Geçmiş sipariş ve fatura kayıtlarınız, yasal saklama süresi boyunca kimliğinizden arındırılmış (anonim) şekilde korunacaktır.' };
   }
 
   // Admin app'in Personel Atama ekranı için — tüm tezgah personelini (Staff/Shift Lead) ve

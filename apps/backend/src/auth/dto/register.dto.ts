@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
@@ -39,4 +39,16 @@ export class RegisterDto {
   @ApiPropertyOptional({ example: '1995-05-15', description: 'Müşterinin doğum tarihi (YYYY-MM-DD)' })
   @IsOptional()
   birthday?: string;
+
+  // Yasal onaylar (KVKK/ETK) — sadece müşteri self-servis kaydında zorunlu tutulur,
+  // bkz. AuthService.register(). Personel kaydında (CreateStaffDto) doğrulanmaz.
+  @ApiPropertyOptional({ example: true, description: 'Kullanıcı Sözleşmesi ve KVKK Aydınlatma Metni onayı' })
+  @IsOptional()
+  @IsBoolean()
+  kvkkAccepted?: boolean;
+
+  @ApiPropertyOptional({ example: false, description: 'Ticari elektronik ileti (ETK) gönderimi onayı — isteğe bağlıdır' })
+  @IsOptional()
+  @IsBoolean()
+  marketingOptIn?: boolean;
 }

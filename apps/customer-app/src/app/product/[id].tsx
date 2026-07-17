@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, resolveImageUrl } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Fonts, formatTL } from '../../constants/theme';
@@ -154,7 +154,7 @@ export default function ProductDetailScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.imageWrapper}>
-          <Image source={{ uri: product.imageUrl }} style={styles.image} resizeMode="cover" />
+          <Image source={{ uri: resolveImageUrl(product.imageUrl) }} style={styles.image} resizeMode="cover" />
         </View>
 
         <GlassView backgroundColor={colors.cardBg} blurAmount={22} style={[styles.detailsContainer, { borderColor: colors.border }]}>

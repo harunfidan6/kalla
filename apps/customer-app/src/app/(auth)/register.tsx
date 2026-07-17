@@ -7,6 +7,8 @@ import { Fonts } from '../../constants/theme';
 import GlassBackground from '../../components/GlassBackground';
 import GlassView from '../../components/GlassView';
 import { LogoSvg } from '../../components/KallaIcons';
+import LegalTextModal from '../../components/LegalTextModal';
+import { LEGAL_SECTIONS, LegalSection } from '../../constants/legalTexts';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -21,14 +23,25 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [kvkkAccepted, setKvkkAccepted] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [legalSection, setLegalSection] = useState<LegalSection | null>(null);
+
+  const userAgreement = LEGAL_SECTIONS.find((s) => s.key === 'userAgreement')!;
+  const kvkkText = LEGAL_SECTIONS.find((s) => s.key === 'kvkk')!;
+
   const handleRegister = async () => {
     if (!email || !phone || !password || !fullName) {
       setError('Lütfen zorunlu alanları doldurun (*)');
       return;
     }
+    if (!kvkkAccepted) {
+      setError('Devam etmek için Kullanıcı Sözleşmesi ve KVKK Aydınlatma Metni\'ni onaylamanız gerekir.');
+      return;
+    }
     setError(null);
     setLoading(true);
-    const result = await register(email, phone, password, fullName, birthday);
+    const result = await register(email, phone, password, fullName, kvkkAccepted, marketingOptIn, birthday);
     setLoading(false);
 
     if (result.success) {
@@ -80,6 +93,33 @@ export default function RegisterScreen() {
             </View>
           ))}
 
+          <View style={styles.checkboxRow}>
+            <TouchableOpacity onPress={() => setKvkkAccepted((v) => !v)}>
+              <View style={[styles.checkboxBox, { borderColor: colors.border }, kvkkAccepted && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+                {kvkkAccepted && <Text style={styles.checkboxMark}>✓</Text>}
+              </View>
+            </TouchableOpacity>
+            {/* Bağlantılar (Kullanıcı Sözleşmesi/KVKK) nested Text onPress kullanıyor — bunları
+                bir TouchableOpacity'nin İÇİNE koymak dokunuşu ebeveyn Touchable'a kaptırıyordu
+                (web'de tıklama modalı açmak yerine checkbox'ı değiştiriyordu), bu yüzden etiket
+                artık ayrı, dokunulabilir olmayan bir sarmalayıcıda. */}
+            <Text style={[styles.checkboxLabel, { color: colors.textSecondary, fontFamily: Fonts.ui }]} onPress={() => setKvkkAccepted((v) => !v)}>
+              <Text onPress={() => setLegalSection(userAgreement)} style={{ color: colors.gold, fontFamily: Fonts.uiSemiBold }}>Kullanıcı Sözleşmesi</Text>
+              {' '}ve{' '}
+              <Text onPress={() => setLegalSection(kvkkText)} style={{ color: colors.gold, fontFamily: Fonts.uiSemiBold }}>KVKK Aydınlatma Metni</Text>
+              {"'ni okudum, kabul ediyorum. *"}
+            </Text>
+          </View>
+
+          <TouchableOpacity style={styles.checkboxRow} onPress={() => setMarketingOptIn((v) => !v)}>
+            <View style={[styles.checkboxBox, { borderColor: colors.border }, marketingOptIn && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+              {marketingOptIn && <Text style={styles.checkboxMark}>✓</Text>}
+            </View>
+            <Text style={[styles.checkboxLabel, { color: colors.textSecondary, fontFamily: Fonts.ui }]}>
+              İndirimler, hediye kahve kuponları ve kampanyalardan haberdar olmak için bana ticari elektronik ileti gönderilmesini kabul ediyorum.
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity onPress={handleRegister} disabled={loading} style={[styles.button, { borderRadius: glass.radius.md, backgroundColor: colors.primary }]}>
             {loading ? <ActivityIndicator color="#fdfdfb" /> : <Text style={[styles.buttonText, { fontFamily: Fonts.uiBold }]}>Kayıt Ol</Text>}
           </TouchableOpacity>
@@ -89,6 +129,7 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </GlassView>
       </ScrollView>
+      <LegalTextModal section={legalSection} onClose={() => setLegalSection(null)} />
     </View>
   );
 }
@@ -106,6 +147,10 @@ const styles = StyleSheet.create({
   button: { height: 46, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
   buttonText: { color: '#fdfdfb', fontSize: 15 },
   errorText: { fontSize: 12, textAlign: 'center', marginBottom: 14 },
+  checkboxRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 14 },
+  checkboxBox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  checkboxMark: { color: '#fdfdfb', fontSize: 12, fontWeight: '700' },
+  checkboxLabel: { flex: 1, fontSize: 11.5, lineHeight: 17 },
   linkContainer: { marginTop: 18, alignItems: 'center' },
   linkText: { fontSize: 13 },
 });
