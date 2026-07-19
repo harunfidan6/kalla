@@ -778,7 +778,7 @@ export class OrdersService {
   async initializeCheckoutForm(userId: string, orderId: string, useWallet: boolean, walletAmount?: number) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: { include: { product: true } } },
+      include: { items: { include: { product: true } }, payment: true },
     });
 
     if (!order) {
@@ -787,6 +787,14 @@ export class OrdersService {
 
     if (order.customerId !== userId) {
       throw new UnauthorizedException('Bu sipariş için işlem yapamazsınız');
+    }
+
+    // Without this, retrying checkout after the reconciliation cron already resolved the
+    // payment as SUCCESS (e.g. the customer's WebView never saw the success redirect, so they
+    // went back and pressed "pay" again) silently upserts a fresh PENDING session over an
+    // already-charged order — see reconciliation.service.ts for the matching bug this guards.
+    if (order.payment && order.payment.status === 'SUCCESS') {
+      throw new BadRequestException('Bu sipariş için zaten başarılı bir ödeme yapılmış');
     }
 
     const totalKurus = Math.round(order.totalAmount * 100);

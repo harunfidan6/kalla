@@ -45,6 +45,7 @@ export default function LoginScreen() {
           <View style={[styles.logoCircle, { backgroundColor: colors.cardBgStrong, borderColor: colors.border }]}>
             <LogoSvg size={30} color={colors.primary} />
           </View>
+          <Text style={[styles.roleLabel, { color: colors.textMuted, fontFamily: Fonts.uiExtraBold }]}>PERSONEL</Text>
           <Text style={[styles.wordmark, { color: colors.text, fontFamily: Fonts.displayItalicSemiBold }]}>Källa</Text>
           <Text style={[styles.portalCaption, { color: colors.gold, fontFamily: Fonts.uiBold }]}>NORDIC PORTAL</Text>
         </View>
@@ -139,6 +140,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
   },
+  roleLabel: { fontSize: 9, letterSpacing: 2, marginBottom: 2 },
   wordmark: { fontSize: 24 },
   portalCaption: { fontSize: 8.5, letterSpacing: 3, marginTop: 2 },
   title: { fontSize: 19, textAlign: 'center', marginBottom: 6 },

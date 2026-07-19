@@ -497,6 +497,12 @@ export default function CartScreen() {
                       source={{ uri: paymentPageUrl }}
                       style={{ flex: 1, backgroundColor: '#ffffff' }}
                       startInLoadingState
+                      domStorageEnabled
+                      javaScriptEnabled
+                      thirdPartyCookiesEnabled
+                      sharedCookiesEnabled
+                      mixedContentMode="always"
+                      originWhitelist={['*']}
                       renderLoading={() => (
                         <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }]}>
                           <ActivityIndicator size="small" color={colors.primary} />

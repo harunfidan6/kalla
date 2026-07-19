@@ -175,7 +175,7 @@ export default function ProductDetailScreen() {
                 <View key={group.label} style={styles.optionSection}>
                   <Text style={[styles.optionLabel, { color: colors.textMuted, fontFamily: Fonts.uiBold }]}>{group.label}</Text>
                   <View style={styles.optionsRow}>
-                    {group.options.map((option) => {
+                    {group.options.map((option: { key: string; label: string }) => {
                       const isSelected = group.value === option.key;
                       return (
                         <TouchableOpacity key={option.key} onPress={() => group.setValue(option.key)}>

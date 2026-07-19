@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 
 interface GlassViewProps {
@@ -56,32 +55,18 @@ export default function GlassView({
     return <View style={[styles.glassContainer, webStyle, shapeStyle, { backgroundColor: surfaceColor }, style]}>{children}</View>;
   }
 
-  // Native: real backdrop blur (blurMethod + blurTarget pointing at a shared root view) was
-  // tried here and reverted — with several GlassView instances open on one screen, expo-blur's
-  // Android implementation (Dimezis BlurView) recurses while walking the shared target's render
-  // tree and crashes the app with a native stack overflow (SIGSEGV in RenderThread). BlurView
-  // itself (even with no blur method) was then dropped too — with `blurMethod` unset it did no
-  // blurring at all, only its own tint, and its layout didn't reliably fill dynamically-sized
-  // cards, leaving a visible seam where it undersized against its sibling layers.
-  // A corner-to-corner LinearGradient was tried next, but on wide/short cards its perceptible
-  // change is compressed into the corners, leaving a large visually-flat "dead zone" in the
-  // middle — exactly the "beyazlık" (flat white patch) reported. An off-center RadialGradient
-  // (same technique already used for the background blobs) reads as a soft light source hitting
-  // glass instead, and its falloff is visible across the whole card, not just the diagonal.
+  // Native: three separate overlay techniques were tried and reverted here — real backdrop
+  // blur (crashed, see git history), a corner-to-corner LinearGradient sheen, and an off-center
+  // SVG RadialGradient highlight (all three left the exact same flat white patch visible in the
+  // middle of wide/short cards). Removing just the overlay (keeping `elevation`) was NOT enough —
+  // the patch came back. `elevation` forces Android to promote the View to its own hardware
+  // layer to draw the shadow; that layer is what was compositing badly (the semi-transparent
+  // tint rendering as opaque white in parts of the layer). Dropping `elevation` on native and
+  // keeping only the border for depth is the stable fix — no hardware layer, no patch.
+  const { elevation: _elevation, ...nativeShapeStyle } = shapeStyle;
+
   return (
-    <View style={[styles.glassContainer, shapeStyle, style]}>
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: surfaceColor }]} />
-      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Defs>
-          <RadialGradient id="glassHighlight" cx="26%" cy="16%" r="90%">
-            <Stop offset="0%" stopColor="#ffffff" stopOpacity={glass.highlightOpacity} />
-            <Stop offset="55%" stopColor="#ffffff" stopOpacity={glass.highlightOpacity * 0.35} />
-            <Stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#glassHighlight)" />
-      </Svg>
-      <View style={[styles.topHighlight, { backgroundColor: glass.shadow.innerHighlight }]} pointerEvents="none" />
+    <View style={[styles.glassContainer, nativeShapeStyle, { backgroundColor: surfaceColor }, style]}>
       {children}
     </View>
   );
@@ -92,12 +77,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
     position: 'relative',
-  },
-  topHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 1,
   },
 });

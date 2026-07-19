@@ -1,13 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventsGateway } from '../gateway/events.gateway';
 import { OrderStatus } from '@kafe/shared-types';
 
 @Injectable()
 export class ReconciliationService {
   private readonly logger = new Logger(ReconciliationService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private eventsGateway: EventsGateway) {}
 
   // Run reconciliation every 5 minutes
   @Cron('*/5 * * * *')
@@ -168,14 +169,27 @@ export class ReconciliationService {
             },
           });
 
-          // 4. Update Order status
+          // 4. Update Order status — must match checkout()'s success path: flipping only
+          // paymentStatus (not status) here left reconciled orders stuck in "pending_payment"
+          // forever, invisible to staff, even though the customer was actually charged.
           await tx.order.update({
             where: { id: orderId },
-            data: { paymentStatus: 'paid_online' },
+            data: { paymentStatus: 'paid_online', status: OrderStatus.RECEIVED },
           });
         });
 
         this.logger.log(`Successfully reconciled Order: ${orderId} as SUCCESS.`);
+
+        // Push a live update to the staff Kanban — without this, a reconciled order only
+        // appears after staff manually refresh, same gap notifyOrderPaidIfReceived() closes
+        // for the interactive checkout() path.
+        const updatedOrder = await this.prisma.order.findUnique({
+          where: { id: orderId },
+          include: { items: { include: { product: true } }, customer: { select: { fullName: true, email: true, phone: true } } },
+        });
+        if (updatedOrder && updatedOrder.status === OrderStatus.RECEIVED) {
+          this.eventsGateway.emitNewOrder(updatedOrder);
+        }
       } catch (err: any) {
         this.logger.error(`Failed to apply reconciliation transaction updates for Order: ${orderId}: ${err.message}`);
       }
